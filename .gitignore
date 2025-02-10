@@ -1,0 +1,10 @@
+.env
+build
+node_modules
+
+# emacs
+*~
+*#
+
+# macOs
+.DS_STORE

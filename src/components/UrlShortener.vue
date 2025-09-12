@@ -32,13 +32,19 @@
           </div>
 
           <div class="form-group half">
-            <label for="expiry-input">📅 Data de expiração:</label>
-            <input 
-              id="expiry-input"
-              type="date" 
-              v-model="expiryDate"
-              class="secondary-input"
-            >
+            <label for="expiry-input">📅 Data de expiração (automática):</label>
+            <div class="date-display">
+              <input 
+                id="expiry-input"
+                type="date" 
+                v-model="expiryDate"
+                class="secondary-input disabled"
+                disabled
+                readonly
+                title="Data de expiração é automaticamente definida para amanhã"
+              >
+              <span class="auto-label">Amanhã</span>
+            </div>
           </div>
         </div>
 
@@ -88,12 +94,17 @@ export default {
     return {
       urlInput: '',
       customAlias: '',
-      expiryDate: new Date().toISOString().split('T')[0],
+      expiryDate: this.getTomorrowDate(),
       shortenedUrl: null,
       qrCode: null,
     };
   },
   methods: {
+    getTomorrowDate() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    },
     async shortenUrl() {
       try {
         const response = await fetch('https://arrasta.click/shorten', {
@@ -244,6 +255,38 @@ export default {
   border-color: #28a745;
   box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
   transform: translateY(-2px);
+}
+
+.secondary-input.disabled {
+  background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+  color: #6c757d;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
+
+.secondary-input.disabled:focus {
+  box-shadow: none;
+  transform: none;
+  border-color: #dee2e6;
+}
+
+.date-display {
+  position: relative;
+}
+
+.auto-label {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(45deg, #28a745, #20c997);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
 }
 
 .primary-button {

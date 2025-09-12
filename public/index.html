@@ -1,18 +1,46 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    
+    <!-- Custom Arrasta.click favicon with cache busting -->
+    <link rel="icon" type="image/svg+xml" href="<%= BASE_URL %>icon.svg?v=2.0">
+    <link rel="icon" type="image/x-icon" href="<%= BASE_URL %>favicon.ico?v=2.0">
+    <link rel="apple-touch-icon" href="<%= BASE_URL %>icon.svg?v=2.0">
+    <link rel="shortcut icon" href="<%= BASE_URL %>icon.svg?v=2.0">
+    
+    <!-- Meta tags for SEO and social sharing -->
+    <meta name="description" content="Arrasta.click - O encurtador de URLs mais maneiro da internet! Transforme links longos em URLs curtas e elegantes com QR codes e controle de expiração.">
+    <meta name="keywords" content="encurtador de url, link curto, qr code, arrasta.click, url shortener">
+    <meta name="author" content="Arrasta.click">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Arrasta.click - Encurtador de URLs">
+    <meta property="og:description" content="Transforme links longos em URLs curtas e elegantes! 🚀">
+    <meta property="og:url" content="https://arrasta.click">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Arrasta.click - Encurtador de URLs">
+    <meta name="twitter:description" content="Transforme links longos em URLs curtas e elegantes! 🚀">
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#28a745">
+    <meta name="msapplication-TileColor" content="#28a745">
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <title><%= htmlWebpackPlugin.options.title %></title>
+    
+    <title>Arrasta.click - Encurtador de URLs</title>
   </head>
   <body>
     <noscript>
-      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+      <strong>Desculpe, mas o Arrasta.click não funciona adequadamente sem JavaScript habilitado. Por favor, habilite o JavaScript para continuar.</strong>
     </noscript>
     <div id="app"></div>
     <!-- built files will be auto injected -->

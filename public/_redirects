@@ -1,0 +1,4 @@
+# Netlify redirects for Vue Router SPA
+# This ensures all routes are handled by Vue Router instead of showing Netlify's 404
+
+/*    /index.html   200

@@ -28,7 +28,7 @@ Aqui, a mágica acontece! Transformamos links longos e chatos em URLs curtinhas 
 
 ## 🚀 Como rodar o projeto
 
-1. **Clone o repositório:** `git clone https://github.com/YOUR_GITHUB_USERNAME/arrasta-frontend.git`
+1. **Clone o repositório:** `git clone https://github.com/marlonsouza/arrasta-frontend.git`
 2. **Instale as dependências:** `npm install`
 3. **Rode o servidor de desenvolvimento:** `npm run serve`
 4. **Acesse o projeto:** `http://localhost:8080`

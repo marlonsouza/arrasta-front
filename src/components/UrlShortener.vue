@@ -27,6 +27,7 @@
               v-model="customAlias" 
               placeholder="meulink"
               class="secondary-input"
+              @input="validateAlias"
             >
           </div>
 
@@ -159,6 +160,13 @@ export default {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    },
+
+    validateAlias(event) {
+      const value = event.target.value;
+      if (value.includes('@')) {
+        this.customAlias = value.replace(/@/g, '');
+      }
     },
   },
 };

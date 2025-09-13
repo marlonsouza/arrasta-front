@@ -35,12 +35,13 @@
             <div class="date-display">
               <input 
                 id="expiry-input"
-                type="date" 
-                v-model="expiryDate"
+                type="text" 
+                v-model="expiryDateFormatted"
                 class="secondary-input disabled"
                 disabled
                 readonly
                 title="Data de expiração é automaticamente definida para amanhã"
+                placeholder="dd/mm/aaaa"
               >
               <span class="auto-label">Amanhã</span>
             </div>
@@ -96,6 +97,16 @@ export default {
       shortenedUrl: null,
       qrCode: null,
     };
+  },
+  computed: {
+    expiryDateFormatted() {
+      if (!this.expiryDate) return '';
+      const date = new Date(this.expiryDate);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
   },
   methods: {
     getTomorrowDate() {

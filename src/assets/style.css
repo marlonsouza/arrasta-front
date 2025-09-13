@@ -3,8 +3,9 @@ body {
   font-family: 'Oswald', sans-serif;
   margin: 0;
   padding: 0;
-  background: linear-gradient(135deg, #f4f4f9 0%, #e8e8f0 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   min-height: 100vh;
+  color: #e0e0e0;
 }
 
 /* Global Typography */
@@ -20,7 +21,7 @@ body {
   margin: 40px auto;
   border: none;
   height: 3px;
-  background: linear-gradient(45deg, #28a745, #007bff, #6610f2);
+  background: linear-gradient(45deg, #C14A09, #a03f08, #d85c0b);
   max-width: 600px;
   border-radius: 2px;
   opacity: 0.7;
@@ -30,19 +31,20 @@ body {
 .navigation {
   margin-bottom: 40px;
   text-align: center;
-  background: white;
+  background: #1f1f1f;
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   max-width: 500px;
   margin: 0 auto 40px auto;
+  border: 1px solid #333;
 }
 
 .nav-link {
   display: inline-block;
   margin: 0 10px;
   padding: 15px 25px;
-  background: linear-gradient(45deg, #28a745, #20c997);
+  background: linear-gradient(45deg, #C14A09, #a03f08);
   color: white;
   text-decoration: none;
   border-radius: 10px;
@@ -50,18 +52,18 @@ body {
   font-size: 1.2em;
   font-weight: bold;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 4px 15px rgba(193, 74, 9, 0.3);
 }
 
 .nav-link:hover {
-  background: linear-gradient(45deg, #218838, #1ea080);
+  background: linear-gradient(45deg, #a03f08, #8b3507);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 6px 20px rgba(193, 74, 9, 0.4);
 }
 
 .nav-link.router-link-active {
-  background: linear-gradient(45deg, #007bff, #6610f2);
-  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+  background: linear-gradient(45deg, #C14A09, #d85c0b);
+  box-shadow: 0 6px 20px rgba(193, 74, 9, 0.4);
 }
 
 /* Responsive Navigation */

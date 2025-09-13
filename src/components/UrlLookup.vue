@@ -2,14 +2,14 @@
   <div class="url-lookup">
     <div class="container">
       <div class="header-section">
-        <div class="logo-icon">🔍</div>
+        <div class="logo-icon">🌌</div>
         <h1>Consultar Link</h1>
-        <p class="subtitle">Descubra informações detalhadas sobre qualquer link do Arrasta.click! 📊</p>
+        <p class="subtitle">Descubra informações detalhadas sobre qualquer link do Arrasta.click! 🌃</p>
       </div>
 
       <div class="form-section">
         <div class="form-group">
-          <label for="shortcode-input">🔗 Código do link:</label>
+          <label for="shortcode-input">⛓️ Código do link:</label>
           <input 
             id="shortcode-input"
             type="text" 
@@ -20,31 +20,31 @@
         </div>
 
         <button @click="getUrlInfo" class="primary-button">
-          <span class="button-icon">🔍</span>
+          <span class="button-icon">🌐</span>
           Consultar Informações
         </button>
       </div>
 
       <div v-if="errorMessage" class="error-section">
-        <div class="error-icon">⚠️</div>
+        <div class="error-icon">🚨</div>
         <div class="error-message">
           {{ errorMessage }}
         </div>
       </div>
 
       <div v-if="urlInfo" class="info-section">
-        <div class="success-icon">✨</div>
+        <div class="success-icon">🌌</div>
         <h3>Informações do Link</h3>
         
         <div class="info-card">
           <div class="info-grid">
             <div class="info-item primary">
-              <div class="info-label">🏷️ Código:</div>
+              <div class="info-label">🔖 Código:</div>
               <div class="info-value">{{ urlInfo.shortCode }}</div>
             </div>
 
             <div class="info-item primary">
-              <div class="info-label">🔗 URL Original:</div>
+              <div class="info-label">⛓️ URL Original:</div>
               <div class="info-value">
                 <a :href="urlInfo.originalUrl" target="_blank" class="original-link">
                   {{ urlInfo.originalUrl }}
@@ -53,44 +53,44 @@
             </div>
 
             <div class="info-item">
-              <div class="info-label">🏷️ Alias Personalizado:</div>
+              <div class="info-label">🔖 Alias Personalizado:</div>
               <div class="info-value">{{ urlInfo.customAlias || 'Não definido' }}</div>
             </div>
 
             <div class="info-item highlight">
-              <div class="info-label">👥 Total de Acessos:</div>
+              <div class="info-label">🌌 Total de Acessos:</div>
               <div class="info-value access-count">{{ urlInfo.accessNumber }}</div>
             </div>
 
             <div class="info-item">
-              <div class="info-label">📅 Criado em:</div>
+              <div class="info-label">🌃 Criado em:</div>
               <div class="info-value">{{ formatDate(urlInfo.createdAt) }}</div>
             </div>
 
             <div class="info-item">
-              <div class="info-label">⏰ Expira em:</div>
+              <div class="info-label">🌙 Expira em:</div>
               <div class="info-value">{{ formatDate(urlInfo.expiryDate) }}</div>
             </div>
 
             <div class="info-item">
-              <div class="info-label">👤 Usuário:</div>
+              <div class="info-label">🌌 Usuário:</div>
               <div class="info-value">{{ urlInfo.userId }}</div>
             </div>
           </div>
 
           <div v-if="urlInfo.qrCodeDataURL" class="qr-section">
-            <h4>📱 QR Code</h4>
+            <h4>🌐 QR Code</h4>
             <div class="qr-container">
               <img :src="urlInfo.qrCodeDataURL" alt="QR Code" class="qr-image" />
             </div>
             <button @click="downloadInfoQrCode" class="action-button secondary">
-              💾 Baixar QR Code
+              💿 Baixar QR Code
             </button>
           </div>
 
           <div class="navigation-buttons">
             <router-link to="/@/" class="nav-button primary">
-              🚀 Encurtar Novo Link
+              🌙 Encurtar Novo Link
             </router-link>
           </div>
         </div>
@@ -176,17 +176,18 @@ export default {
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background: linear-gradient(135deg, #f4f4f9 0%, #e8e8f0 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .container {
-  background: white;
+  background: #1f1f1f;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   max-width: 800px;
   width: 100%;
-  border-top: 5px solid #007bff;
+  border-top: 5px solid #C14A09;
+  border: 1px solid #333;
 }
 
 /* Header Section */
@@ -208,14 +209,14 @@ export default {
 
 .header-section h1 {
   font-family: 'Oswald', serif;
-  color: #007bff;
+  color: #C14A09;
   font-size: 3.5em;
   margin-bottom: 10px;
   font-weight: bold;
 }
 
 .subtitle {
-  color: #666;
+  color: #b0b0b0;
   font-size: 1.3em;
   margin: 0;
   font-style: italic;
@@ -233,7 +234,7 @@ export default {
 .form-group label {
   display: block;
   font-family: 'Oswald', sans-serif;
-  color: #333;
+  color: #e0e0e0;
   font-size: 1.2em;
   margin-bottom: 8px;
   font-weight: bold;
@@ -242,26 +243,27 @@ export default {
 .main-input {
   width: 100%;
   padding: 15px;
-  border: 2px solid #007bff;
+  border: 2px solid #C14A09;
   border-radius: 10px;
   font-size: 1.1em;
   font-family: 'Oswald', sans-serif;
   transition: all 0.3s ease;
   box-sizing: border-box;
-  background: linear-gradient(45deg, #f8f9fa, #ffffff);
+  background: linear-gradient(45deg, #2a2a2a, #333);
+  color: #e0e0e0;
 }
 
 .main-input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(193, 74, 9, 0.2);
   transform: translateY(-2px);
 }
 
 .primary-button {
   width: 100%;
   padding: 18px 30px;
-  background: linear-gradient(45deg, #007bff, #6610f2);
+  background: linear-gradient(45deg, #C14A09, #a03f08);
   color: white;
   border: none;
   border-radius: 12px;
@@ -270,7 +272,7 @@ export default {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(193, 74, 9, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -278,9 +280,9 @@ export default {
 }
 
 .primary-button:hover {
-  background: linear-gradient(45deg, #0056b3, #520dc2);
+  background: linear-gradient(45deg, #a03f08, #8b3507);
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+  box-shadow: 0 8px 25px rgba(193, 74, 9, 0.4);
 }
 
 .button-icon {
@@ -299,9 +301,9 @@ export default {
   text-align: center;
   margin: 30px 0;
   padding: 30px;
-  background: linear-gradient(45deg, #ffe6e6, #fff0f0);
+  background: linear-gradient(45deg, #2d1f1f, #3d2222);
   border-radius: 15px;
-  border: 2px solid #dc3545;
+  border: 2px solid #ef4444;
 }
 
 .error-icon {
@@ -317,7 +319,7 @@ export default {
 }
 
 .error-message {
-  color: #dc3545;
+  color: #ef4444;
   font-size: 1.2em;
   font-weight: bold;
   margin: 0;
@@ -328,7 +330,7 @@ export default {
   text-align: center;
   margin-top: 40px;
   padding-top: 40px;
-  border-top: 2px solid #e0e0e0;
+  border-top: 2px solid #444;
 }
 
 .success-icon {
@@ -339,16 +341,16 @@ export default {
 
 .info-section h3 {
   font-family: 'Oswald', serif;
-  color: #007bff;
+  color: #C14A09;
   font-size: 2em;
   margin-bottom: 30px;
 }
 
 .info-card {
-  background: linear-gradient(45deg, #f8f9fa, #ffffff);
+  background: linear-gradient(45deg, #2a2a2a, #333);
   padding: 30px;
   border-radius: 15px;
-  border: 2px solid #007bff;
+  border: 2px solid #C14A09;
   text-align: left;
 }
 
@@ -360,39 +362,39 @@ export default {
 }
 
 .info-item {
-  background: white;
+  background: #1a1a1a;
   padding: 20px;
   border-radius: 12px;
-  border-left: 5px solid #6c757d;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid #64748b;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
 .info-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .info-item.primary {
-  border-left-color: #007bff;
-  background: linear-gradient(45deg, #e3f2fd, #ffffff);
+  border-left-color: #C14A09;
+  background: linear-gradient(45deg, #1e1b3a, #2a2a2a);
 }
 
 .info-item.highlight {
-  border-left-color: #28a745;
-  background: linear-gradient(45deg, #e8f5e8, #ffffff);
+  border-left-color: #10b981;
+  background: linear-gradient(45deg, #1a2e1a, #2a2a2a);
 }
 
 .info-label {
   font-family: 'Oswald', sans-serif;
   font-weight: bold;
-  color: #333;
+  color: #e0e0e0;
   font-size: 1.1em;
   margin-bottom: 8px;
 }
 
 .info-value {
-  color: #555;
+  color: #b0b0b0;
   font-size: 1.1em;
   word-break: break-word;
 }
@@ -400,11 +402,11 @@ export default {
 .access-count {
   font-size: 1.5em;
   font-weight: bold;
-  color: #28a745;
+  color: #10b981;
 }
 
 .original-link {
-  color: #007bff;
+  color: #C14A09;
   text-decoration: none;
   font-weight: bold;
 }
@@ -417,23 +419,23 @@ export default {
   text-align: center;
   margin: 30px 0;
   padding: 25px;
-  background: linear-gradient(45deg, #f0f8ff, #ffffff);
+  background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
   border-radius: 15px;
-  border: 2px solid #e3f2fd;
+  border: 2px solid #333;
 }
 
 .qr-section h4 {
   font-family: 'Oswald', serif;
-  color: #333;
+  color: #e0e0e0;
   font-size: 1.4em;
   margin-bottom: 20px;
 }
 
 .qr-container {
-  background: white;
+  background: #1a1a1a;
   padding: 20px;
   border-radius: 10px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #444;
   display: inline-block;
   margin-bottom: 20px;
 }
@@ -458,12 +460,12 @@ export default {
 }
 
 .action-button.secondary {
-  background: linear-gradient(45deg, #6c757d, #495057);
+  background: linear-gradient(45deg, #64748b, #475569);
   color: white;
 }
 
 .action-button.secondary:hover {
-  background: linear-gradient(45deg, #545b62, #3a3f44);
+  background: linear-gradient(45deg, #475569, #334155);
   transform: translateY(-2px);
 }
 
@@ -485,14 +487,14 @@ export default {
 }
 
 .nav-button.primary {
-  background: linear-gradient(45deg, #28a745, #20c997);
+  background: linear-gradient(45deg, #C14A09, #a03f08);
   color: white;
 }
 
 .nav-button.primary:hover {
-  background: linear-gradient(45deg, #218838, #1ea080);
+  background: linear-gradient(45deg, #9c6eff, #7c3aed);
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 6px 20px rgba(193, 74, 9, 0.3);
 }
 
 /* Responsive */

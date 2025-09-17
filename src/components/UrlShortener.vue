@@ -174,29 +174,34 @@ export default {
 
 <style scoped>
 .url-shortener {
-  min-height: 80vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 20px;
+  align-items: flex-start;
+  padding: 10px;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .container {
   background: #1f1f1f;
-  padding: 40px;
+  padding: 30px;
   border-radius: 20px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   max-width: 700px;
   width: 100%;
   border-top: 5px solid #C14A09;
   border: 1px solid #333;
+  margin-top: 80px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
 }
 
 /* Header Section */
 .header-section {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 
 .logo-icon {
@@ -213,8 +218,8 @@ export default {
 .header-section h1 {
   font-family: 'Oswald', serif;
   color: #C14A09;
-  font-size: 3.5em;
-  margin-bottom: 10px;
+  font-size: 2.8em;
+  margin-bottom: 8px;
   font-weight: bold;
 }
 
@@ -227,11 +232,11 @@ export default {
 
 /* Form Section */
 .form-section {
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 15px;
 }
 
 .form-group.half {
@@ -468,28 +473,51 @@ export default {
 
 /* Responsive */
 @media (max-width: 600px) {
+  .url-shortener {
+    padding: 5px;
+  }
+
   .container {
-    padding: 20px;
-    margin: 10px;
+    padding: 15px;
+    margin: 5px;
+    margin-top: 110px;
+    max-height: calc(100vh - 115px);
   }
-  
+
   .header-section h1 {
-    font-size: 2.5em;
+    font-size: 2.2em;
   }
-  
+
+  .header-section {
+    margin-bottom: 15px;
+  }
+
+  .form-section {
+    margin-bottom: 15px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
   .form-row {
     flex-direction: column;
     gap: 0;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .action-button {
     width: 100%;
     max-width: 280px;
+  }
+
+  .result-section {
+    margin-top: 20px;
+    padding-top: 20px;
   }
 }
 </style>

@@ -4,8 +4,9 @@ body {
   margin: 0;
   padding: 0;
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  min-height: 100vh;
+  height: 100vh;
   color: #e0e0e0;
+  overflow: hidden;
 }
 
 /* Global Typography */
@@ -29,27 +30,30 @@ body {
 
 /* Enhanced Navigation */
 .navigation {
-  margin-bottom: 40px;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   background: #1f1f1f;
-  padding: 20px;
+  padding: 15px;
   border-radius: 15px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   max-width: 500px;
-  margin: 0 auto 40px auto;
   border: 1px solid #333;
+  z-index: 100;
 }
 
 .nav-link {
   display: inline-block;
-  margin: 0 10px;
-  padding: 15px 25px;
+  margin: 0 8px;
+  padding: 12px 20px;
   background: linear-gradient(45deg, #C14A09, #a03f08);
   color: white;
   text-decoration: none;
   border-radius: 10px;
   font-family: 'Oswald', sans-serif;
-  font-size: 1.2em;
+  font-size: 1.1em;
   font-weight: bold;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(193, 74, 9, 0.3);
@@ -69,13 +73,20 @@ body {
 /* Responsive Navigation */
 @media (max-width: 600px) {
   .navigation {
-    margin: 0 10px 30px 10px;
-    padding: 15px;
+    position: relative;
+    top: 0;
+    left: 0;
+    transform: none;
+    margin: 5px 5px 15px 5px;
+    padding: 10px;
+    max-width: none;
   }
-  
+
   .nav-link {
     display: block;
-    margin: 10px 0;
+    margin: 8px 0;
     text-align: center;
+    font-size: 1em;
+    padding: 10px 15px;
   }
 }

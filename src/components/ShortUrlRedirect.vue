@@ -56,6 +56,8 @@
 </template>
 
 <script>
+import apiConfig from '@/services/apiConfig';
+
 export default {
   name: 'ShortUrlRedirect',
   props: {
@@ -76,7 +78,7 @@ export default {
   methods: {
     async redirectToOriginalUrl() {
       try {
-        const response = await fetch(`https://arrasta.click/info/${this.shortCode}`);
+        const response = await fetch(apiConfig.getArrastaEndpoints().info(this.shortCode));
         
         if (!response.ok) {
           if (response.status === 404) {

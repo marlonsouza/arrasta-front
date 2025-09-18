@@ -88,6 +88,8 @@
 </template>
 
 <script>
+import apiConfig from '@/services/apiConfig';
+
 export default {
   name: 'UrlShortener',
   data() {
@@ -117,7 +119,7 @@ export default {
     },
     async shortenUrl() {
       try {
-        const response = await fetch('https://arrasta.click/shorten', {
+        const response = await fetch(apiConfig.getArrastaEndpoints().shorten, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

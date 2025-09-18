@@ -100,6 +100,8 @@
 </template>
 
 <script>
+import apiConfig from '@/services/apiConfig';
+
 export default {
   name: 'UrlLookup',
   props: {
@@ -123,7 +125,7 @@ export default {
       this.urlInfo = null;
       
       try {
-        const response = await fetch(`https://arrasta.click/info/${this.shortCodeInput}`);
+        const response = await fetch(apiConfig.getArrastaEndpoints().info(this.shortCodeInput));
         
         if (!response.ok) {
           if (response.status === 404) {

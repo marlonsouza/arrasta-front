@@ -18,13 +18,22 @@ export function useMercadoPago() {
   // MercadoPago Public Key - should be in environment variables
   const publicKey = process.env.VUE_APP_MP_PUBLIC_KEY || 'TEST-your-public-key-here';
 
+  // MercadoPago base URL - configurable via environment variable
+  const mercadoPagoBaseUrl = process.env.VUE_APP_MP_BASE_URL || 'https://www.mercadopago.com.br';
+
   /**
    * Initialize MercadoPago SDK
    */
   const initializeMercadoPago = async () => {
     try {
       if (isSDKLoaded.value) {
-        return mp.value;
+          return mp.value;
+      }
+
+
+      // Validate public key
+      if (!publicKey || publicKey === 'TEST-your-public-key-here') {
+        throw new Error('MercadoPago public key not configured. Check VUE_APP_MP_PUBLIC_KEY in .env file');
       }
 
       isLoading.value = true;
@@ -33,18 +42,21 @@ export function useMercadoPago() {
       // Load MercadoPago SDK
       await loadMercadoPago();
 
+      // Check if SDK was loaded
+      if (!window.MercadoPago) {
+        throw new Error('MercadoPago SDK failed to load');
+      }
+
       // Initialize MercadoPago instance
       mp.value = new window.MercadoPago(publicKey, {
         locale: 'pt-BR'
       });
 
       isSDKLoaded.value = true;
-      console.log('MercadoPago SDK initialized successfully');
 
       return mp.value;
     } catch (err) {
       error.value = `Failed to initialize MercadoPago SDK: ${err.message}`;
-      console.error('MercadoPago SDK initialization error:', err);
       throw err;
     } finally {
       isLoading.value = false;
@@ -58,12 +70,18 @@ export function useMercadoPago() {
    */
   const openCheckout = async (preferenceId, options = {}) => {
     try {
+
       if (!mp.value) {
         await initializeMercadoPago();
       }
 
       if (!preferenceId) {
         throw new Error('Preference ID is required');
+      }
+
+      // Validate preference ID format
+      if (typeof preferenceId !== 'string' || preferenceId.length < 10) {
+        throw new Error('Invalid preference ID format');
       }
 
       const defaultOptions = {
@@ -76,43 +94,74 @@ export function useMercadoPago() {
 
       // Open MercadoPago Checkout Pro
       const checkout = mp.value.checkout(defaultOptions);
-
-      console.log('Checkout opened with preference:', preferenceId);
       return checkout;
     } catch (err) {
       error.value = `Failed to open checkout: ${err.message}`;
-      console.error('Checkout error:', err);
       throw err;
     }
   };
 
   /**
-   * Complete payment flow: create preference and open checkout
+   * Complete payment flow: create preference and redirect to MercadoPago
    * @param {string} idUrl - URL identifier
    * @param {number} quantity - Quantity
-   * @param {Object} checkoutOptions - Additional checkout options
+   * @param {Object} options - Additional options
    */
-  const processPayment = async (idUrl, quantity, checkoutOptions = {}) => {
+  const processPayment = async (idUrl, quantity, options = {}) => {
     try {
       isLoading.value = true;
       error.value = null;
 
       // Step 1: Create payment preference via backend
-      console.log('Creating payment preference...', { idUrl, quantity });
       const preferenceId = await mercadoPagoService.createPaymentPreference(idUrl, quantity);
 
-      // Step 2: Open MercadoPago Checkout Pro
-      console.log('Opening checkout with preference:', preferenceId);
-      const checkout = await openCheckout(preferenceId, checkoutOptions);
+      // Step 2: Try SDK approach first, fallback to direct redirect
+      try {
+        const checkout = await openCheckout(preferenceId, options);
+        return { preferenceId, checkout, method: 'sdk' };
+      } catch (sdkError) {
+        // Fallback: Direct redirect to MercadoPago
+        const checkoutUrl = `${mercadoPagoBaseUrl}/checkout/v1/redirect?pref_id=${preferenceId}`;
 
-      return {
-        preferenceId,
-        checkout
-      };
+        // Redirect user to MercadoPago
+        window.location.href = checkoutUrl;
+
+        return { preferenceId, checkoutUrl, method: 'redirect' };
+      }
     } catch (err) {
       const errorInfo = mercadoPagoService.handlePaymentError(err);
       error.value = errorInfo.message;
-      console.error('Payment process error:', errorInfo);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Alternative payment flow using direct redirect (no SDK)
+   * @param {string} idUrl - URL identifier
+   * @param {number} quantity - Quantity
+   */
+  const processPaymentWithRedirect = async (idUrl, quantity) => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+
+
+      // Create payment preference via backend
+      const preferenceId = await mercadoPagoService.createPaymentPreference(idUrl, quantity);
+
+      // Build MercadoPago checkout URL
+      const checkoutUrl = `${mercadoPagoBaseUrl}/checkout/v1/redirect?pref_id=${preferenceId}`;
+
+
+      // Direct redirect - no SDK needed
+      window.location.href = checkoutUrl;
+
+      return { preferenceId, checkoutUrl };
+    } catch (err) {
+      const errorInfo = mercadoPagoService.handlePaymentError(err);
+      error.value = errorInfo.message;
       throw err;
     } finally {
       isLoading.value = false;
@@ -138,7 +187,6 @@ export function useMercadoPago() {
     } catch (err) {
       const errorInfo = mercadoPagoService.handlePaymentError(err);
       error.value = errorInfo.message;
-      console.error('Payment verification error:', errorInfo);
       throw err;
     } finally {
       isLoading.value = false;
@@ -175,8 +223,8 @@ export function useMercadoPago() {
   // Initialize SDK on component mount
   onMounted(() => {
     if (!isSDKLoaded.value) {
-      initializeMercadoPago().catch(err => {
-        console.warn('MercadoPago SDK auto-initialization failed:', err.message);
+      initializeMercadoPago().catch(() => {
+        // Silent fail for auto-initialization
       });
     }
   });
@@ -193,6 +241,7 @@ export function useMercadoPago() {
     initializeMercadoPago,
     openCheckout,
     processPayment,
+    processPaymentWithRedirect,
     verifyPayment,
     clearError,
     handlePaymentReturn,

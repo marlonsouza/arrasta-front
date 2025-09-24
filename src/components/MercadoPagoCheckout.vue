@@ -136,7 +136,7 @@
         />
         <button type="submit" :disabled="isLoading || !verificationPaymentId">
           <span v-if="isLoading">⏳ Verificando...</span>
-          <span v-else">🔍 Verificar</span>
+          <span v-else>🔍 Verificar</span>
         </button>
       </form>
     </div>
@@ -168,8 +168,7 @@ export default {
       verifyPayment,
       clearError,
       handlePaymentReturn,
-      formatCurrency,
-      getPaymentStatusInfo
+      formatCurrency
     } = useMercadoPago();
 
     // Component state
@@ -192,17 +191,15 @@ export default {
     // Methods
     const handlePayment = async () => {
       try {
-        const result = await processPayment(
+        await processPayment(
           paymentData.value.idUrl,
           paymentData.value.quantity
         );
 
-        console.log('Payment initiated:', result);
-
         // The checkout will open in a new window/tab
         // User will return to the app after payment completion
       } catch (err) {
-        console.error('Payment error:', err);
+        console.error('Erro ao criar pagamento', err);
       }
     };
 
@@ -211,9 +208,8 @@ export default {
         const result = await verifyPayment(verificationPaymentId.value);
         paymentResult.value = result;
         showPaymentStatus.value = true;
-        console.log('Payment verified:', result);
       } catch (err) {
-        console.error('Verification error:', err);
+        // Error handling removed for production
       }
     };
 
@@ -223,7 +219,7 @@ export default {
           const result = await verifyPayment(paymentResult.value.id);
           paymentResult.value = result;
         } catch (err) {
-          console.error('Refresh error:', err);
+          // Error handling removed for production
         }
       }
     };
@@ -255,7 +251,7 @@ export default {
           paymentResult.value = result;
           showPaymentStatus.value = true;
         } catch (err) {
-          console.error('Return payment verification error:', err);
+          // Error handling removed for production
         }
       }
     };

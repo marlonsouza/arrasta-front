@@ -17,9 +17,10 @@ class MercadoPagoService {
    * Creates a payment preference in the backend
    * @param {string} idUrl - URL identifier
    * @param {number} quantity - Quantity (positive integer)
+   * @param {number} expirationDays - Expiration days for the payment link (default: 7)
    * @returns {Promise<string>} MercadoPago preference ID
    */
-  async createPaymentPreference(idUrl, quantity) {
+  async createPaymentPreference(idUrl, quantity, expirationDays = 7) {
     try {
       // Validate input
       if (!idUrl || !quantity) {
@@ -30,6 +31,15 @@ class MercadoPagoService {
         throw new Error('Quantity must be a positive integer');
       }
 
+      if (!Number.isInteger(expirationDays) || expirationDays <= 0) {
+        throw new Error('Expiration days must be a positive integer');
+      }
+
+      // Calculate expiration date
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + expirationDays);
+      const expiresAt = expirationDate.toISOString();
+
       const response = await fetch(this.endpoints.createPreference, {
         method: 'POST',
         headers: {
@@ -37,7 +47,8 @@ class MercadoPagoService {
         },
         body: JSON.stringify({
           idUrl,
-          quantity
+          quantity,
+          expires_at: expiresAt
         })
       });
 

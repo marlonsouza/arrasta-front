@@ -3,6 +3,9 @@ import UrlShortener from '../components/UrlShortener.vue'
 import UrlLookup from '../components/UrlLookup.vue'
 import ShortUrlRedirect from '../components/ShortUrlRedirect.vue'
 import MercadoPagoCheckout from '../components/MercadoPagoCheckout.vue'
+import PaymentSuccess from '../components/PaymentSuccess.vue'
+import PaymentPending from '../components/PaymentPending.vue'
+import PaymentFailure from '../components/PaymentFailure.vue'
 
 const routes = [
   {
@@ -23,6 +26,21 @@ const routes = [
     path: '/@/payment',
     name: 'Payment',
     component: MercadoPagoCheckout
+  },
+  {
+    path: '/@/success',
+    name: 'PaymentSuccess',
+    component: PaymentSuccess
+  },
+  {
+    path: '/@/pending',
+    name: 'PaymentPending',
+    component: PaymentPending
+  },
+  {
+    path: '/@/failure',
+    name: 'PaymentFailure',
+    component: PaymentFailure
   },
   {
     path: '/@/info/:shortCode',

@@ -50,7 +50,7 @@
         </div>
 
         <!-- Premium Option -->
-        <div class="premium-section">
+        <div v-if="showPremiumOption" class="premium-section">
           <h3>💎 Opções de Duração</h3>
           <div class="plan-options">
             <div class="plan-option" :class="{ active: !isPremium }" @click="selectPlan(false)">
@@ -76,6 +76,11 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Produção sem feature flag -->
+        <div v-if="isProduction && !isPremiumFeatureEnabled" class="production-notice">
+          <p>🚀 <strong>Versão de Produção</strong> - URLs gratuitas disponíveis</p>
         </div>
 
         <button @click="shortenUrl" class="primary-button" :disabled="isProcessing || paymentLoading">
@@ -140,6 +145,8 @@ export default {
       qrCode: null,
       isPremium: false,
       isProcessing: false,
+      isProduction: process.env.NODE_ENV === 'production',
+      isPremiumFeatureEnabled: false,
     };
   },
   computed: {
@@ -150,6 +157,14 @@ export default {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
       return `${day}/${month}/${year}`;
+    },
+    showPremiumOption() {
+      // Em produção, só mostra se feature=premium na URL
+      if (this.isProduction) {
+        return this.isPremiumFeatureEnabled;
+      }
+      // Em desenvolvimento, sempre mostra
+      return true;
     }
   },
   watch: {
@@ -175,11 +190,20 @@ export default {
       return sevenDays.toISOString().split('T')[0];
     },
     selectPlan(premium) {
+      // Em produção, não permite selecionar premium se não tiver a feature flag
+      if (this.isProduction && premium && !this.isPremiumFeatureEnabled) {
+        return;
+      }
       this.isPremium = premium;
     },
     async shortenUrl() {
       try {
         this.isProcessing = true;
+
+        // Verificação adicional de segurança para premium em produção
+        if (this.isPremium && this.isProduction && !this.isPremiumFeatureEnabled) {
+          throw new Error('Funcionalidade premium não habilitada');
+        }
 
         // Se for premium, primeiro processa o pagamento
         if (this.isPremium) {
@@ -326,6 +350,17 @@ export default {
       }
     },
 
+    checkFeatureFlags() {
+      // Verifica query parameters para feature flags
+      const urlParams = new URLSearchParams(window.location.search);
+      const featureParam = urlParams.get('feature');
+
+      // Habilita premium se feature=premium na URL
+      if (featureParam === 'premium') {
+        this.isPremiumFeatureEnabled = true;
+      }
+    },
+
     async checkPendingPayment() {
       // Verifica se há um pagamento pendente quando o usuário retorna
       const urlParams = new URLSearchParams(window.location.search);
@@ -349,6 +384,9 @@ export default {
   },
 
   mounted() {
+    // Verificar feature flags primeiro
+    this.checkFeatureFlags();
+
     // Verificar se há um pagamento pendente ao carregar a página
     this.checkPendingPayment();
   }
@@ -835,6 +873,26 @@ export default {
   box-shadow: none;
 }
 
+/* Production Notice */
+.production-notice {
+  background: linear-gradient(135deg, #2a2a2a, #333);
+  border: 2px solid #4caf50;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+.production-notice p {
+  color: #e0e0e0;
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.production-notice strong {
+  color: #4caf50;
+}
+
 @media (max-width: 768px) {
   .container {
     margin: 10px;
@@ -869,6 +927,15 @@ export default {
 
   .plan-duration {
     font-size: 10px;
+  }
+
+  .production-notice {
+    padding: 12px;
+    margin: 10px 0;
+  }
+
+  .production-notice p {
+    font-size: 1em;
   }
 }
 </style>

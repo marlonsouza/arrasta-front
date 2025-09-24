@@ -34,6 +34,21 @@
         </div>
 
         <div class="form-group">
+          <label for="expirationDays">⏰ Expiração (dias):</label>
+          <input
+            id="expirationDays"
+            v-model.number="paymentData.expirationDays"
+            type="number"
+            min="1"
+            max="30"
+            placeholder="7"
+            required
+            :disabled="isLoading"
+          />
+          <small>Link expira em {{ paymentData.expirationDays }} {{ paymentData.expirationDays === 1 ? 'dia' : 'dias' }}</small>
+        </div>
+
+        <div class="form-group">
           <div class="payment-info">
             <span class="amount">
               💰 Valor: {{ formatCurrency(9.90) }}
@@ -174,7 +189,8 @@ export default {
     // Component state
     const paymentData = ref({
       idUrl: '',
-      quantity: 1
+      quantity: 1,
+      expirationDays: 7
     });
 
     const showPaymentStatus = ref(false);
@@ -185,7 +201,8 @@ export default {
     // Computed properties
     const isFormValid = computed(() => {
       return paymentData.value.idUrl.trim() &&
-             paymentData.value.quantity > 0;
+             paymentData.value.quantity > 0 &&
+             paymentData.value.expirationDays > 0;
     });
 
     // Methods
@@ -193,7 +210,8 @@ export default {
       try {
         await processPayment(
           paymentData.value.idUrl,
-          paymentData.value.quantity
+          paymentData.value.quantity,
+          paymentData.value.expirationDays
         );
 
         // The checkout will open in a new window/tab
@@ -230,7 +248,8 @@ export default {
       clearError();
       paymentData.value = {
         idUrl: '',
-        quantity: 1
+        quantity: 1,
+        expirationDays: 7
       };
       verificationPaymentId.value = '';
     };
@@ -353,6 +372,12 @@ export default {
 .form-group input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
+}
+
+.form-group small {
+  margin-top: 5px;
+  color: #666;
+  font-size: 12px;
 }
 
 .payment-info {

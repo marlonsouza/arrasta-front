@@ -11,8 +11,15 @@
 
 <style>
 #app {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  #app {
+    height: 100vh;
+    overflow: hidden;
+  }
 }
 </style>
 

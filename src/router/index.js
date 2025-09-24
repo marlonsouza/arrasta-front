@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import UrlShortener from '../components/UrlShortener.vue'
 import UrlLookup from '../components/UrlLookup.vue'
 import ShortUrlRedirect from '../components/ShortUrlRedirect.vue'
+import MercadoPagoCheckout from '../components/MercadoPagoCheckout.vue'
 
 const routes = [
   {
@@ -17,6 +18,11 @@ const routes = [
     path: '/@/lookup',
     name: 'Lookup',
     component: UrlLookup
+  },
+  {
+    path: '/@/payment',
+    name: 'Payment',
+    component: MercadoPagoCheckout
   },
   {
     path: '/@/info/:shortCode',

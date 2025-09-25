@@ -30,6 +30,23 @@
         </div>
       </div>
 
+      <!-- Status da criação da URL -->
+      <div v-if="isProcessingUrl" class="url-processing">
+        <div class="processing-icon">⏳</div>
+        <p>Criando sua URL premium...</p>
+        <div class="countdown">Aguarde 5 segundos</div>
+      </div>
+
+      <!-- URL criada com sucesso -->
+      <div v-else-if="urlCreated && createdUrl" class="url-created">
+        <div class="success-icon">🌟</div>
+        <h3>URL Premium Criada!</h3>
+        <div class="url-display">
+          <a :href="createdUrl" target="_blank" class="premium-url">{{ createdUrl }}</a>
+        </div>
+        <button @click="copyUrl" class="btn copy-btn">📋 Copiar URL</button>
+      </div>
+
       <div class="actions">
         <router-link to="/@/" class="btn primary">Criar Novo Link</router-link>
         <router-link to="/@/lookup" class="btn secondary">Consultar Links</router-link>
@@ -39,15 +56,21 @@
 </template>
 
 <script>
+import apiConfig from '@/services/apiConfig';
+
 export default {
   name: 'PaymentSuccess',
   data() {
     return {
-      paymentInfo: null
+      paymentInfo: null,
+      isProcessingUrl: true,
+      urlCreated: false,
+      createdUrl: null
     }
   },
   mounted() {
     this.extractPaymentInfo();
+    this.processPaymentSuccess();
   },
   methods: {
     extractPaymentInfo() {
@@ -87,6 +110,104 @@ export default {
         'refunded': 'Reembolsado'
       };
       return statuses[status] || status;
+    },
+
+    async processPaymentSuccess() {
+      try {
+        // 1. Recuperar dados do localStorage usando session_id
+        const sessionId = this.getSessionIdFromUrl();
+        if (!sessionId) {
+          console.error('Session ID não encontrado na URL');
+          this.isProcessingUrl = false;
+          return;
+        }
+
+        const pendingKey = `pendingUrl_${sessionId}`;
+        const pendingDataStr = localStorage.getItem(pendingKey);
+
+        if (!pendingDataStr) {
+          console.error('Dados de pagamento não encontrados no localStorage');
+          this.isProcessingUrl = false;
+          return;
+        }
+
+        const pendingData = JSON.parse(pendingDataStr);
+
+        // 2. Aguardar 5 segundos antes de criar a URL
+        setTimeout(async () => {
+          try {
+            await this.createPremiumUrl(pendingData);
+
+            // Limpar dados do localStorage
+            localStorage.removeItem(pendingKey);
+
+            // Limpar parâmetros da URL
+            this.cleanUrlParams();
+
+            this.isProcessingUrl = false;
+            this.urlCreated = true;
+
+          } catch (error) {
+            console.error('Erro ao criar URL premium:', error);
+            this.isProcessingUrl = false;
+          }
+        }, 5000);
+
+      } catch (error) {
+        console.error('Erro ao processar pagamento:', error);
+        this.isProcessingUrl = false;
+      }
+    },
+
+    getSessionIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('session_id');
+    },
+
+    async createPremiumUrl(pendingData) {
+      const response = await fetch(apiConfig.getArrastaEndpoints().shorten, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalUrl: pendingData.originalUrl,
+          customAlias: pendingData.customAlias,
+          expiryDate: pendingData.expiryDate,
+          isPremium: true,
+          paymentId: pendingData.urlId,
+          sessionId: pendingData.sessionId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao criar URL premium');
+      }
+
+      const data = await response.json();
+      this.createdUrl = data.shortUrl;
+
+      // Opcional: mostrar QR code também
+      // this.qrCode = data.qrCodeDataURL;
+    },
+
+    cleanUrlParams() {
+      // Remove os parâmetros de pagamento da URL
+      const url = new URL(window.location);
+      url.search = '';
+      window.history.replaceState({}, document.title, url);
+    },
+
+    copyUrl() {
+      if (this.createdUrl) {
+        navigator.clipboard.writeText(this.createdUrl)
+          .then(() => {
+            // Opcional: mostrar feedback visual
+          })
+          .catch(() => {
+            console.error('Erro ao copiar URL');
+          });
+      }
     }
   }
 }
@@ -161,6 +282,70 @@ export default {
 
 .success-status {
   color: #4caf50;
+}
+
+.url-processing, .url-created {
+  background: #1f1f1f;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: center;
+  border: 2px solid #C14A09;
+}
+
+.processing-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.url-processing p {
+  color: #e0e0e0;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.countdown {
+  color: #C14A09;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.url-created h3 {
+  color: #4caf50;
+  margin-bottom: 15px;
+  font-size: 1.5em;
+}
+
+.url-display {
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+  border: 1px solid #444;
+}
+
+.premium-url {
+  color: #C14A09;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.2em;
+  word-break: break-all;
+}
+
+.premium-url:hover {
+  text-decoration: underline;
+}
+
+.copy-btn {
+  background: linear-gradient(45deg, #4caf50, #45a049);
+  margin-top: 10px;
 }
 
 .actions {

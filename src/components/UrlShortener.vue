@@ -245,16 +245,24 @@ export default {
       try {
         // Primeiro, cria a preferência de pagamento no MercadoPago
         const urlId = this.generateUrlId();
+        const sessionId = this.generateSessionId();
 
-
-        // Armazenar dados temporariamente ANTES do pagamento
-        localStorage.setItem('pendingUrl', JSON.stringify({
+        // Armazenar dados temporariamente ANTES do pagamento com identificador único
+        const pendingKey = `pendingUrl_${sessionId}`;
+        localStorage.setItem(pendingKey, JSON.stringify({
           originalUrl: this.urlInput,
           customAlias: this.customAlias,
           expiryDate: this.expiryDate,
           urlId: urlId,
-          isPremium: true
+          sessionId: sessionId,
+          isPremium: true,
+          timestamp: Date.now()
         }));
+
+        // Armazenar o sessionId na URL como parâmetro para recuperação
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('session_id', sessionId);
+        window.history.replaceState({}, '', currentUrl);
 
         // Processa o pagamento usando o composable do MercadoPago
 
@@ -269,7 +277,10 @@ export default {
       } catch (error) {
 
         // Limpar dados se houver erro
-        localStorage.removeItem('pendingUrl');
+        const sessionId = this.getSessionIdFromUrl();
+        if (sessionId) {
+          localStorage.removeItem(`pendingUrl_${sessionId}`);
+        }
 
         // Re-throw com mensagem mais específica
         if (error.message.includes('Failed to initialize MercadoPago SDK')) {
@@ -291,11 +302,29 @@ export default {
       return `${alias}-${timestamp}`;
     },
 
+    generateSessionId() {
+      // Gera um ID único da sessão para evitar conflitos entre abas
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2);
+      return `${timestamp}_${random}`;
+    },
+
+    getSessionIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('session_id');
+    },
+
     async createPremiumUrlAfterPayment() {
       // Esta função será chamada após confirmação do pagamento
-      const pendingData = JSON.parse(localStorage.getItem('pendingUrl') || '{}');
+      const sessionId = this.getSessionIdFromUrl();
+      if (!sessionId) {
+        throw new Error('ID de sessão não encontrado');
+      }
 
-      if (!pendingData.urlId) {
+      const pendingKey = `pendingUrl_${sessionId}`;
+      const pendingData = JSON.parse(localStorage.getItem(pendingKey) || '{}');
+
+      if (!pendingData.urlId || !pendingData.sessionId) {
         throw new Error('Dados de pagamento não encontrados');
       }
 
@@ -322,7 +351,7 @@ export default {
       this.qrCode = data.qrCodeDataURL;
 
       // Limpar dados temporários
-      localStorage.removeItem('pendingUrl');
+      localStorage.removeItem(pendingKey);
     },
     
     copyUrl() {
@@ -378,14 +407,40 @@ export default {
           // Error handling removed for production
         }
       } else if (paymentId && status === 'rejected') {
-        localStorage.removeItem('pendingUrl');
+        const sessionId = this.getSessionIdFromUrl();
+        if (sessionId) {
+          localStorage.removeItem(`pendingUrl_${sessionId}`);
+        }
       }
+    },
+
+    cleanExpiredLocalStorageData() {
+      // Limpar dados de pagamento expirados (mais de 1 hora)
+      const keys = Object.keys(localStorage);
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+      keys.forEach(key => {
+        if (key.startsWith('pendingUrl_')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            if (data.timestamp && data.timestamp < oneHourAgo) {
+              localStorage.removeItem(key);
+            }
+          } catch (error) {
+            // Se não conseguir parsear, remove o item
+            localStorage.removeItem(key);
+          }
+        }
+      });
     }
   },
 
   mounted() {
     // Verificar feature flags primeiro
     this.checkFeatureFlags();
+
+    // Limpar dados expirados do localStorage
+    this.cleanExpiredLocalStorageData();
 
     // Verificar se há um pagamento pendente ao carregar a página
     this.checkPendingPayment();

@@ -284,7 +284,7 @@ export default {
     },
 
     async createPayment(urlData) {
-      const response = await fetch('/.netlify/functions/prefer', {
+      const response = await fetch(apiConfig.getMercadoPagoEndpoints().createPreference, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

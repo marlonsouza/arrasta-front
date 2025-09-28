@@ -186,7 +186,6 @@ export default {
       isLoading,
       error,
       isSDKLoaded,
-      processPayment,
       verifyPayment,
       clearError,
       handlePaymentReturn,

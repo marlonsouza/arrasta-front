@@ -135,7 +135,7 @@ export default {
       }
     },
 
-    generateQRCode(url) {
+    generateQRCode() {
       // Se o QR code não veio por parâmetro, gerar localmente
       // Você pode usar uma biblioteca como qrcode.js ou similar
       // Por simplicidade, assumindo que vem do backend

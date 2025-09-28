@@ -67,7 +67,7 @@ export default {
         const data = await response.json();
 
         switch (data.status) {
-          case 'completed':
+          case 'completed': {
             // Redirecionar com dados da URL se disponíveis
             let redirectUrl = `/@/success?session_id=${sessionId}`;
             if (data.shortUrl) {
@@ -75,6 +75,7 @@ export default {
             }
             this.$router.push(redirectUrl);
             break;
+          }
           case 'pending':
             this.statusMessage = 'Pagamento ainda está pendente. Por favor, aguarde e tente novamente.';
             break;

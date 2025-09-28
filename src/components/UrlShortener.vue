@@ -129,6 +129,7 @@
 <script>
 import apiConfig from '@/services/apiConfig';
 import { useMercadoPago } from '@/composables/useMercadoPago';
+import mercadoPagoService from '@/services/mercadoPagoService';
 
 export default {
   name: 'UrlShortener',
@@ -284,24 +285,23 @@ export default {
     },
 
     async createPayment(urlData) {
-      const response = await fetch(apiConfig.getMercadoPagoEndpoints().createPreference, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          originalUrl: urlData.originalUrl,
-          customAlias: urlData.customAlias,
-          expiryDate: urlData.expiryDate,
-          quantity: urlData.quantity || 1
-        })
-      });
+      try {
+        // Use mercadoPagoService para criar a preferência
+        // O serviço espera idUrl (originalUrl)
+        const preferenceId = await mercadoPagoService.createPaymentPreference(
+          urlData.originalUrl,
+          urlData.quantity || 1,
+          7 // 7 dias de expiração para premium
+        );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Falha ao criar pagamento');
+        // Para agora, usar o preferenceId como sessionId também
+        // O backend pode ser atualizado para retornar ambos separadamente
+        const sessionId = preferenceId;
+
+        return { preferenceId, sessionId };
+      } catch (error) {
+        throw new Error(error.message || 'Falha ao criar pagamento');
       }
-
-      const { id: preferenceId, sessionId } = await response.json();
-      return { preferenceId, sessionId };
     },
 
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="payment-result success">
+  <div class="payment-success">
     <div class="result-card">
       <div class="icon">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -8,9 +8,10 @@
         </svg>
       </div>
 
-      <h1>Pagamento Aprovado!</h1>
-      <p class="status-message">Seu pagamento foi processado com sucesso.</p>
+      <h2>🎉 Pagamento Aprovado!</h2>
+      <p class="status-message">Seu pagamento foi processado com sucesso e sua URL premium foi criada!</p>
 
+      <!-- Informações do pagamento -->
       <div class="payment-details" v-if="paymentInfo">
         <div class="detail-item">
           <span class="label">ID do Pagamento:</span>
@@ -21,30 +22,36 @@
           <span class="value">{{ paymentInfo.external_reference }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">Tipo de Pagamento:</span>
-          <span class="value">{{ formatPaymentType(paymentInfo.payment_type) }}</span>
-        </div>
-        <div class="detail-item">
           <span class="label">Status:</span>
           <span class="value success-status">{{ formatStatus(paymentInfo.status) }}</span>
         </div>
       </div>
 
-      <!-- Status da criação da URL -->
-      <div v-if="isProcessingUrl" class="url-processing">
-        <div class="processing-icon">⏳</div>
-        <p>Criando sua URL premium...</p>
-        <div class="countdown">Aguarde 5 segundos</div>
+      <!-- URL criada -->
+      <div v-if="createdUrl" class="url-result">
+        <div class="url-created">
+          <div class="success-icon">🌟</div>
+          <h3>URL Premium Criada!</h3>
+          <div class="url-display">
+            <a :href="createdUrl" target="_blank" class="premium-url">{{ createdUrl }}</a>
+          </div>
+          <button @click="copyUrl" class="btn copy-btn">
+            {{ copied ? '✓ Copiado!' : '📋 Copiar URL' }}
+          </button>
+        </div>
+
+        <div v-if="qrCode" class="qr-code">
+          <label>QR Code:</label>
+          <img :src="qrCode" alt="QR Code" />
+          <button @click="downloadQR" class="download-btn">Baixar QR</button>
+        </div>
       </div>
 
-      <!-- URL criada com sucesso -->
-      <div v-else-if="urlCreated && createdUrl" class="url-created">
-        <div class="success-icon">🌟</div>
-        <h3>URL Premium Criada!</h3>
-        <div class="url-display">
-          <a :href="createdUrl" target="_blank" class="premium-url">{{ createdUrl }}</a>
-        </div>
-        <button @click="copyUrl" class="btn copy-btn">📋 Copiar URL</button>
+      <!-- Loading state se ainda está processando -->
+      <div v-else-if="isProcessing" class="processing-state">
+        <div class="processing-icon">⏳</div>
+        <p>Processando sua URL premium...</p>
+        <p class="processing-note">Se demorar muito, recarregue a página</p>
       </div>
 
       <div class="actions">
@@ -56,21 +63,21 @@
 </template>
 
 <script>
-import apiConfig from '@/services/apiConfig';
-
 export default {
   name: 'PaymentSuccess',
   data() {
     return {
       paymentInfo: null,
-      isProcessingUrl: true,
-      urlCreated: false,
-      createdUrl: null
+      createdUrl: '',
+      qrCode: '',
+      copied: false,
+      isProcessing: false,
+      sessionId: ''
     }
   },
   mounted() {
     this.extractPaymentInfo();
-    this.processPaymentSuccess();
+    this.checkForCreatedUrl();
   },
   methods: {
     extractPaymentInfo() {
@@ -88,19 +95,55 @@ export default {
         processing_mode: urlParams.get('processing_mode')
       };
     },
-    formatPaymentType(type) {
-      const types = {
-        'credit_card': 'Cartão de Crédito',
-        'debit_card': 'Cartão de Débito',
-        'account_money': 'Dinheiro da Conta MP',
-        'bank_transfer': 'Transferência Bancária',
-        'ticket': 'Boleto',
-        'atm': 'Caixa Eletrônico',
-        'digital_currency': 'Moeda Digital',
-        'digital_wallet': 'Carteira Digital'
-      };
-      return types[type] || type;
+
+    async checkForCreatedUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const shortUrl = urlParams.get('short_url');
+      const isProcessing = urlParams.get('processing') === 'true';
+      const sessionId = urlParams.get('session_id');
+
+      // 🎉 DADOS CHEGAM VIA URL - SEM POLLING!
+      if (shortUrl) {
+        this.createdUrl = decodeURIComponent(shortUrl);
+        // Gerar QR code se necessário (pode vir como parâmetro também)
+        this.generateQRCode(this.createdUrl);
+        this.isProcessing = false;
+        return;
+      }
+
+      // Fallback: UMA consulta apenas se em processamento
+      if (isProcessing && sessionId) {
+        try {
+          const response = await fetch(`/.netlify/functions/prefer/urls/check-status/${sessionId}`);
+          const data = await response.json();
+
+          if (data.status === 'completed' && data.shortUrl) {
+            this.createdUrl = data.shortUrl;
+            this.qrCode = data.qrCode;
+            this.isProcessing = false;
+          } else {
+            // Ainda processando - mostrar estado de loading
+            this.isProcessing = true;
+          }
+        } catch (error) {
+          console.error('Fallback check failed:', error);
+          this.isProcessing = false;
+        }
+      } else {
+        // Nenhum dado - padrão para não processando
+        this.isProcessing = false;
+      }
     },
+
+    generateQRCode() {
+      // Se o QR code não veio por parâmetro, gerar localmente
+      // Você pode usar uma biblioteca como qrcode.js ou similar
+      // Por simplicidade, assumindo que vem do backend
+      if (!this.qrCode) {
+        // Implementar geração de QR code ou deixar sem QR code
+      }
+    },
+
     formatStatus(status) {
       const statuses = {
         'approved': 'Aprovado',
@@ -112,114 +155,50 @@ export default {
       return statuses[status] || status;
     },
 
-    async processPaymentSuccess() {
+    async copyUrl() {
       try {
-        // 1. Recuperar dados do localStorage usando session_id
-        const sessionId = this.getSessionIdFromUrl();
-        if (!sessionId) {
-          console.error('Session ID não encontrado na URL');
-          this.isProcessingUrl = false;
-          return;
-        }
-
-        const pendingKey = `pendingUrl_${sessionId}`;
-        const pendingDataStr = localStorage.getItem(pendingKey);
-
-        if (!pendingDataStr) {
-          console.error('Dados de pagamento não encontrados no localStorage');
-          this.isProcessingUrl = false;
-          return;
-        }
-
-        const pendingData = JSON.parse(pendingDataStr);
-
-        // 2. Aguardar 5 segundos antes de criar a URL
-        setTimeout(async () => {
-          try {
-            await this.createPremiumUrl(pendingData);
-
-            // Limpar dados do localStorage
-            localStorage.removeItem(pendingKey);
-
-            // Limpar parâmetros da URL
-            this.cleanUrlParams();
-
-            this.isProcessingUrl = false;
-            this.urlCreated = true;
-
-          } catch (error) {
-            console.error('Erro ao criar URL premium:', error);
-            this.isProcessingUrl = false;
-          }
-        }, 5000);
-
+        await navigator.clipboard.writeText(this.createdUrl);
+        this.copied = true;
+        setTimeout(() => {
+          this.copied = false;
+        }, 2000);
       } catch (error) {
-        console.error('Erro ao processar pagamento:', error);
-        this.isProcessingUrl = false;
+        console.error('Falha na cópia:', error);
+        this.fallbackCopy();
       }
     },
 
-    getSessionIdFromUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('session_id');
+    fallbackCopy() {
+      const input = document.createElement('input');
+      input.value = this.createdUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      this.copied = true;
+      setTimeout(() => {
+        this.copied = false;
+      }, 2000);
     },
 
-    async createPremiumUrl(pendingData) {
-      const response = await fetch(apiConfig.getArrastaEndpoints().shorten, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          originalUrl: pendingData.originalUrl,
-          customAlias: pendingData.customAlias,
-          expiryDate: pendingData.expiryDate,
-          isPremium: true,
-          paymentId: pendingData.urlId,
-          sessionId: pendingData.sessionId
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao criar URL premium');
-      }
-
-      const data = await response.json();
-      this.createdUrl = data.shortUrl;
-
-      // Opcional: mostrar QR code também
-      // this.qrCode = data.qrCodeDataURL;
-    },
-
-    cleanUrlParams() {
-      // Remove os parâmetros de pagamento da URL
-      const url = new URL(window.location);
-      url.search = '';
-      window.history.replaceState({}, document.title, url);
-    },
-
-    copyUrl() {
-      if (this.createdUrl) {
-        navigator.clipboard.writeText(this.createdUrl)
-          .then(() => {
-            // Opcional: mostrar feedback visual
-          })
-          .catch(() => {
-            console.error('Erro ao copiar URL');
-          });
-      }
+    downloadQR() {
+      const link = document.createElement('a');
+      link.href = this.qrCode;
+      link.download = 'qr-code.png';
+      link.click();
     }
   }
-}
+};
 </script>
 
 <style scoped>
-.payment-result {
+.payment-success {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
   padding: 20px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .result-card {
@@ -231,20 +210,21 @@ export default {
   width: 100%;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   border: 1px solid #333;
+  border-top: 5px solid #4caf50;
 }
 
 .icon {
   margin-bottom: 20px;
 }
 
-.result-card h1 {
+.result-card h2 {
   color: #4caf50;
-  margin-bottom: 10px;
-  font-size: 2em;
+  margin-bottom: 15px;
+  font-size: 1.8em;
 }
 
 .status-message {
-  color: #e0e0e0;
+  color: #b0b0b0;
   margin-bottom: 30px;
   font-size: 1.1em;
 }
@@ -255,6 +235,7 @@ export default {
   padding: 20px;
   margin-bottom: 30px;
   text-align: left;
+  border: 1px solid #444;
 }
 
 .detail-item {
@@ -284,37 +265,28 @@ export default {
   color: #4caf50;
 }
 
-.url-processing, .url-created {
+.url-result {
   background: #1f1f1f;
   border-radius: 10px;
-  padding: 20px;
+  padding: 25px;
   margin: 20px 0;
-  text-align: center;
-  border: 2px solid #C14A09;
+  border: 1px solid #444;
 }
 
-.processing-icon {
+.url-created {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.success-icon {
   font-size: 3em;
   margin-bottom: 15px;
-  animation: pulse 2s infinite;
+  animation: bounce 1s ease-in-out;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-.url-processing p {
-  color: #e0e0e0;
-  font-size: 1.2em;
-  margin-bottom: 10px;
-}
-
-.countdown {
-  color: #C14A09;
-  font-weight: bold;
-  font-size: 1.1em;
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .url-created h3 {
@@ -343,9 +315,83 @@ export default {
   text-decoration: underline;
 }
 
+.processing-state {
+  text-align: center;
+  margin: 30px 0;
+}
+
+.processing-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.processing-state p {
+  color: #b0b0b0;
+  font-size: 1.1em;
+  margin-bottom: 10px;
+}
+
+.processing-note {
+  color: #777;
+  font-size: 0.9em;
+}
+
+.copy-btn,
+.download-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 5px;
+}
+
 .copy-btn {
   background: linear-gradient(45deg, #4caf50, #45a049);
+  color: white;
   margin-top: 10px;
+}
+
+.copy-btn:hover {
+  background: linear-gradient(45deg, #45a049, #388e3c);
+  transform: translateY(-2px);
+}
+
+.download-btn {
+  background: linear-gradient(45deg, #2196f3, #1976d2);
+  color: white;
+}
+
+.download-btn:hover {
+  background: linear-gradient(45deg, #1976d2, #1565c0);
+  transform: translateY(-2px);
+}
+
+.qr-code {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.qr-code label {
+  display: block;
+  color: #e0e0e0;
+  font-weight: bold;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+}
+
+.qr-code img {
+  max-width: 200px;
+  border-radius: 8px;
+  margin-bottom: 15px;
 }
 
 .actions {
@@ -353,6 +399,7 @@ export default {
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 30px;
 }
 
 .btn {
@@ -362,6 +409,8 @@ export default {
   font-weight: bold;
   transition: all 0.3s ease;
   font-size: 1em;
+  border: none;
+  cursor: pointer;
 }
 
 .btn.primary {
@@ -386,16 +435,28 @@ export default {
 }
 
 @media (max-width: 600px) {
+  .payment-success {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
   .result-card {
     padding: 20px;
+    margin-top: 20px;
   }
 
   .actions {
     flex-direction: column;
+    align-items: center;
   }
 
   .btn {
     width: 100%;
+    max-width: 280px;
+  }
+
+  .url-result {
+    padding: 20px;
   }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="payment-result pending">
+  <div class="payment-pending">
     <div class="result-card">
       <div class="icon">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -8,50 +8,27 @@
         </svg>
       </div>
 
-      <h1>Pagamento Pendente</h1>
-      <p class="status-message">Seu pagamento está sendo processado. Você receberá uma confirmação em breve.</p>
+      <h2>⏳ Pagamento Pendente</h2>
+      <p>Seu pagamento está sendo processado. Por favor, aguarde...</p>
 
-      <div class="payment-details" v-if="paymentInfo">
-        <div class="detail-item">
-          <span class="label">ID do Pagamento:</span>
-          <span class="value">{{ paymentInfo.payment_id }}</span>
-        </div>
-        <div class="detail-item" v-if="paymentInfo.external_reference">
-          <span class="label">Referência:</span>
-          <span class="value">{{ paymentInfo.external_reference }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Tipo de Pagamento:</span>
-          <span class="value">{{ formatPaymentType(paymentInfo.payment_type) }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Status:</span>
-          <span class="value pending-status">{{ formatStatus(paymentInfo.status) }}</span>
-        </div>
-      </div>
-
-      <div class="instructions">
-        <h3>Próximos passos:</h3>
-        <ul v-if="paymentInfo.payment_type === 'ticket'">
-          <li>Imprima o boleto ou salve o código de barras</li>
-          <li>Pague em qualquer banco, lotérica ou via internet banking</li>
-          <li>O pagamento pode levar até 3 dias úteis para ser processado</li>
-        </ul>
-        <ul v-else-if="paymentInfo.payment_type === 'bank_transfer'">
-          <li>Complete a transferência bancária no seu banco</li>
-          <li>O pagamento será processado automaticamente</li>
-          <li>Você receberá uma confirmação por email</li>
-        </ul>
-        <ul v-else>
-          <li>Aguarde o processamento do pagamento</li>
-          <li>Em até 2 dias úteis você receberá uma confirmação</li>
-          <li>Verifique seu email regularmente</li>
+      <div class="pending-info">
+        <h3>📋 O que acontece agora?</h3>
+        <ul>
+          <li>🕰️ Aguarde a confirmação do pagamento</li>
+          <li>📱 Você receberá uma notificação quando aprovado</li>
+          <li>🌐 Sua URL premium será criada automaticamente</li>
         </ul>
       </div>
 
-      <div class="actions">
-        <router-link to="/@/" class="btn primary">Criar Novo Link</router-link>
-        <router-link to="/@/lookup" class="btn secondary">Consultar Links</router-link>
+      <div class="pending-actions">
+        <button @click="checkStatus" :disabled="isChecking" class="check-btn">
+          {{ isChecking ? 'Verificando...' : 'Verificar Status' }}
+        </button>
+        <router-link to="/@/" class="home-link">Voltar ao Início</router-link>
+      </div>
+
+      <div v-if="statusMessage" class="status-message">
+        {{ statusMessage }}
       </div>
     </div>
   </div>
@@ -62,62 +39,75 @@ export default {
   name: 'PaymentPending',
   data() {
     return {
-      paymentInfo: null
-    }
-  },
-  mounted() {
-    this.extractPaymentInfo();
+      isChecking: false,
+      statusMessage: ''
+    };
   },
   methods: {
-    extractPaymentInfo() {
-      const urlParams = new URLSearchParams(window.location.search);
-      this.paymentInfo = {
-        collection_id: urlParams.get('collection_id'),
-        collection_status: urlParams.get('collection_status'),
-        payment_id: urlParams.get('payment_id'),
-        status: urlParams.get('status'),
-        external_reference: urlParams.get('external_reference'),
-        payment_type: urlParams.get('payment_type'),
-        merchant_order_id: urlParams.get('merchant_order_id'),
-        preference_id: urlParams.get('preference_id'),
-        site_id: urlParams.get('site_id'),
-        processing_mode: urlParams.get('processing_mode')
-      };
-    },
-    formatPaymentType(type) {
-      const types = {
-        'credit_card': 'Cartão de Crédito',
-        'debit_card': 'Cartão de Débito',
-        'account_money': 'Dinheiro da Conta MP',
-        'bank_transfer': 'Transferência Bancária',
-        'ticket': 'Boleto',
-        'atm': 'Caixa Eletrônico',
-        'digital_currency': 'Moeda Digital',
-        'digital_wallet': 'Carteira Digital'
-      };
-      return types[type] || type;
-    },
-    formatStatus(status) {
-      const statuses = {
-        'approved': 'Aprovado',
-        'pending': 'Pendente',
-        'rejected': 'Rejeitado',
-        'cancelled': 'Cancelado',
-        'refunded': 'Reembolsado'
-      };
-      return statuses[status] || status;
+    async checkStatus() {
+      const sessionId = new URLSearchParams(window.location.search).get('session_id');
+
+      if (!sessionId) {
+        this.statusMessage = 'Nenhum session ID encontrado';
+        return;
+      }
+
+      this.isChecking = true;
+      this.statusMessage = '';
+
+      try {
+        // Usar o endpoint correto conforme sua documentação
+        const response = await fetch(`/.netlify/functions/prefer/urls/check-status/${sessionId}`);
+
+        if (!response.ok) {
+          this.statusMessage = 'Erro ao verificar status. Tente novamente.';
+          return;
+        }
+
+        const data = await response.json();
+
+        switch (data.status) {
+          case 'completed': {
+            // Redirecionar com dados da URL se disponíveis
+            let redirectUrl = `/@/success?session_id=${sessionId}`;
+            if (data.shortUrl) {
+              redirectUrl += `&short_url=${encodeURIComponent(data.shortUrl)}`;
+            }
+            this.$router.push(redirectUrl);
+            break;
+          }
+          case 'pending':
+            this.statusMessage = 'Pagamento ainda está pendente. Por favor, aguarde e tente novamente.';
+            break;
+          case 'processing':
+            // Redirecionar para sucesso com flag de processamento
+            this.$router.push(`/@/success?session_id=${sessionId}&processing=true`);
+            break;
+          case 'failed':
+            this.$router.push(`/@/failure?session_id=${sessionId}`);
+            break;
+          default:
+            this.statusMessage = 'Status desconhecido. Por favor, contate o suporte.';
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+        this.statusMessage = 'Falha ao verificar status. Por favor, tente novamente.';
+      } finally {
+        this.isChecking = false;
+      }
     }
   }
-}
+};
 </script>
 
 <style scoped>
-.payment-result {
+.payment-pending {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
   padding: 20px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .result-card {
@@ -129,131 +119,152 @@ export default {
   width: 100%;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   border: 1px solid #333;
+  border-top: 5px solid #ff9800;
 }
 
 .icon {
   margin-bottom: 20px;
 }
 
-.result-card h1 {
+.result-card h2 {
   color: #ff9800;
-  margin-bottom: 10px;
-  font-size: 2em;
+  margin-bottom: 15px;
+  font-size: 1.8em;
 }
 
-.status-message {
-  color: #e0e0e0;
+.result-card > p {
+  color: #b0b0b0;
   margin-bottom: 30px;
   font-size: 1.1em;
 }
 
-.payment-details {
+.pending-info {
   background: #1f1f1f;
   border-radius: 10px;
-  padding: 20px;
+  padding: 25px;
   margin-bottom: 30px;
   text-align: left;
+  border: 1px solid #444;
 }
 
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #333;
-}
-
-.detail-item:last-child {
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.label {
-  color: #a0a0a0;
-  font-weight: 500;
-}
-
-.value {
-  color: #e0e0e0;
-  font-weight: bold;
-}
-
-.pending-status {
+.pending-info h3 {
   color: #ff9800;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.3em;
 }
 
-.instructions {
-  background: #1f1f1f;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 30px;
-  text-align: left;
+.pending-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.instructions h3 {
+.pending-info li {
   color: #e0e0e0;
   margin-bottom: 15px;
-  text-align: center;
+  padding: 15px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  font-size: 1.1em;
+  border-left: 4px solid #ff9800;
+  transition: all 0.3s ease;
 }
 
-.instructions ul {
-  color: #a0a0a0;
-  padding-left: 20px;
+.pending-info li:hover {
+  background: #333;
+  transform: translateX(5px);
 }
 
-.instructions li {
-  margin-bottom: 8px;
-  line-height: 1.5;
+.pending-info li:last-child {
+  margin-bottom: 0;
 }
 
-.actions {
+.pending-actions {
   display: flex;
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.btn {
+.check-btn,
+.home-link {
   padding: 12px 24px;
   border-radius: 8px;
-  text-decoration: none;
   font-weight: bold;
   transition: all 0.3s ease;
   font-size: 1em;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
 }
 
-.btn.primary {
-  background: linear-gradient(45deg, #C14A09, #a03f08);
+.check-btn {
+  background: linear-gradient(45deg, #ff9800, #f57c00);
   color: white;
 }
 
-.btn.primary:hover {
+.check-btn:hover:not(:disabled) {
+  background: linear-gradient(45deg, #f57c00, #ef6c00);
+  transform: translateY(-2px);
+}
+
+.check-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.home-link {
+  background: linear-gradient(45deg, #C14A09, #a03f08);
+  color: white;
+  display: inline-block;
+}
+
+.home-link:hover {
   background: linear-gradient(45deg, #a03f08, #8b3507);
   transform: translateY(-2px);
 }
 
-.btn.secondary {
-  background: transparent;
-  color: #e0e0e0;
-  border: 2px solid #333;
-}
-
-.btn.secondary:hover {
-  background: #333;
-  transform: translateY(-2px);
+.status-message {
+  background: #1f1f1f;
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  padding: 15px;
+  color: #ff9800;
+  font-weight: bold;
+  margin-top: 20px;
 }
 
 @media (max-width: 600px) {
+  .payment-pending {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
   .result-card {
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  .pending-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .check-btn,
+  .home-link {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .pending-info {
     padding: 20px;
   }
 
-  .actions {
-    flex-direction: column;
-  }
-
-  .btn {
-    width: 100%;
+  .pending-info li {
+    padding: 12px;
   }
 }
 </style>

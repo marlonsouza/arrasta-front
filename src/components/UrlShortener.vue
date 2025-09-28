@@ -243,44 +243,32 @@ export default {
 
     async processPremiumUrl() {
       try {
-        // Primeiro, cria a preferência de pagamento no MercadoPago
-        const urlId = this.generateUrlId();
-        const sessionId = this.generateSessionId();
-
-        // Armazenar dados temporariamente ANTES do pagamento com identificador único
-        const pendingKey = `pendingUrl_${sessionId}`;
-        localStorage.setItem(pendingKey, JSON.stringify({
+        // Preparar dados da URL para envio ao backend
+        const urlData = {
           originalUrl: this.urlInput,
           customAlias: this.customAlias,
           expiryDate: this.expiryDate,
-          urlId: urlId,
-          sessionId: sessionId,
-          isPremium: true,
-          timestamp: Date.now()
-        }));
+          quantity: 1
+        };
 
-        // Armazenar o sessionId na URL como parâmetro para recuperação
-        const currentUrl = new URL(window.location);
-        currentUrl.searchParams.set('session_id', sessionId);
-        window.history.replaceState({}, '', currentUrl);
+        // Criar pagamento via backend - agora envia dados da URL junto
+        const { preferenceId, sessionId } = await this.createPayment(urlData);
+
+        // Armazenar sessionId para consultar status depois
+        sessionStorage.setItem('paymentSessionId', sessionId);
 
         // Processa o pagamento usando o composable do MercadoPago
-
         try {
           // Tenta primeiro o método normal (com SDK)
-          await this.processPayment(urlId, 1);
+          await this.processPayment(preferenceId, 1);
         } catch (sdkError) {
           // Fallback: usar redirecionamento direto
-          await this.processPaymentWithRedirect(urlId, 1);
+          await this.processPaymentWithRedirect(preferenceId, 1);
         }
 
       } catch (error) {
-
-        // Limpar dados se houver erro
-        const sessionId = this.getSessionIdFromUrl();
-        if (sessionId) {
-          localStorage.removeItem(`pendingUrl_${sessionId}`);
-        }
+        // Limpar sessionStorage se houver erro
+        sessionStorage.removeItem('paymentSessionId');
 
         // Re-throw com mensagem mais específica
         if (error.message.includes('Failed to initialize MercadoPago SDK')) {
@@ -295,64 +283,33 @@ export default {
       }
     },
 
-    generateUrlId() {
-      // Gera um ID único para a URL baseado no timestamp e alias
-      const timestamp = Date.now();
-      const alias = this.customAlias || 'auto';
-      return `${alias}-${timestamp}`;
+    async createPayment(urlData) {
+      const response = await fetch('/.netlify/functions/prefer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalUrl: urlData.originalUrl,
+          customAlias: urlData.customAlias,
+          expiryDate: urlData.expiryDate,
+          quantity: urlData.quantity || 1
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Falha ao criar pagamento');
+      }
+
+      const { id: preferenceId, sessionId } = await response.json();
+      return { preferenceId, sessionId };
     },
 
-    generateSessionId() {
-      // Gera um ID único da sessão para evitar conflitos entre abas
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2);
-      return `${timestamp}_${random}`;
-    },
 
     getSessionIdFromUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get('session_id');
     },
 
-    async createPremiumUrlAfterPayment() {
-      // Esta função será chamada após confirmação do pagamento
-      const sessionId = this.getSessionIdFromUrl();
-      if (!sessionId) {
-        throw new Error('ID de sessão não encontrado');
-      }
-
-      const pendingKey = `pendingUrl_${sessionId}`;
-      const pendingData = JSON.parse(localStorage.getItem(pendingKey) || '{}');
-
-      if (!pendingData.urlId || !pendingData.sessionId) {
-        throw new Error('Dados de pagamento não encontrados');
-      }
-
-      const response = await fetch(apiConfig.getArrastaEndpoints().shorten, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          originalUrl: pendingData.originalUrl,
-          customAlias: pendingData.customAlias,
-          expiryDate: pendingData.expiryDate,
-          isPremium: true,
-          paymentId: pendingData.urlId // ID do pagamento para validação
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao criar URL premium');
-      }
-
-      const data = await response.json();
-      this.shortenedUrl = data.shortUrl;
-      this.qrCode = data.qrCodeDataURL;
-
-      // Limpar dados temporários
-      localStorage.removeItem(pendingKey);
-    },
     
     copyUrl() {
       navigator.clipboard.writeText(this.shortenedUrl)
@@ -390,60 +347,12 @@ export default {
       }
     },
 
-    async checkPendingPayment() {
-      // Verifica se há um pagamento pendente quando o usuário retorna
-      const urlParams = new URLSearchParams(window.location.search);
-      const paymentId = urlParams.get('payment_id');
-      const status = urlParams.get('status');
 
-      if (paymentId && status === 'approved') {
-        try {
-          await this.createPremiumUrlAfterPayment();
-
-          // Limpar parâmetros da URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-
-        } catch (error) {
-          // Error handling removed for production
-        }
-      } else if (paymentId && status === 'rejected') {
-        const sessionId = this.getSessionIdFromUrl();
-        if (sessionId) {
-          localStorage.removeItem(`pendingUrl_${sessionId}`);
-        }
-      }
-    },
-
-    cleanExpiredLocalStorageData() {
-      // Limpar dados de pagamento expirados (mais de 1 hora)
-      const keys = Object.keys(localStorage);
-      const oneHourAgo = Date.now() - (60 * 60 * 1000);
-
-      keys.forEach(key => {
-        if (key.startsWith('pendingUrl_')) {
-          try {
-            const data = JSON.parse(localStorage.getItem(key));
-            if (data.timestamp && data.timestamp < oneHourAgo) {
-              localStorage.removeItem(key);
-            }
-          } catch (error) {
-            // Se não conseguir parsear, remove o item
-            localStorage.removeItem(key);
-          }
-        }
-      });
-    }
   },
 
   mounted() {
     // Verificar feature flags primeiro
     this.checkFeatureFlags();
-
-    // Limpar dados expirados do localStorage
-    this.cleanExpiredLocalStorageData();
-
-    // Verificar se há um pagamento pendente ao carregar a página
-    this.checkPendingPayment();
   }
 };
 </script>

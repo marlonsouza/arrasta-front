@@ -1,5 +1,5 @@
 <template>
-  <div class="payment-result failure">
+  <div class="payment-failure">
     <div class="result-card">
       <div class="icon">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -8,52 +8,33 @@
         </svg>
       </div>
 
-      <h1>Pagamento Rejeitado</h1>
-      <p class="status-message">Infelizmente, seu pagamento não pôde ser processado.</p>
-
-      <div class="payment-details" v-if="paymentInfo">
-        <div class="detail-item">
-          <span class="label">ID do Pagamento:</span>
-          <span class="value">{{ paymentInfo.payment_id }}</span>
-        </div>
-        <div class="detail-item" v-if="paymentInfo.external_reference">
-          <span class="label">Referência:</span>
-          <span class="value">{{ paymentInfo.external_reference }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Tipo de Pagamento:</span>
-          <span class="value">{{ formatPaymentType(paymentInfo.payment_type) }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Status:</span>
-          <span class="value failure-status">{{ formatStatus(paymentInfo.status) }}</span>
-        </div>
-      </div>
+      <h2>❌ Pagamento Rejeitado</h2>
+      <p>Infelizmente, seu pagamento não pôde ser processado.</p>
 
       <div class="error-reasons">
-        <h3>Possíveis motivos:</h3>
+        <h3>📝 Possíveis motivos:</h3>
         <ul>
-          <li>Dados do cartão incorretos (número, CVV, data de vencimento)</li>
-          <li>Saldo insuficiente</li>
-          <li>Cartão bloqueado ou cancelado</li>
-          <li>Limite de compra excedido</li>
-          <li>Problemas de conectividade</li>
+          <li>💳 Dados do cartão incorretos (número, CVV, data de vencimento)</li>
+          <li>💰 Saldo insuficiente</li>
+          <li>🚫 Cartão bloqueado ou cancelado</li>
+          <li>📈 Limite de compra excedido</li>
+          <li>🌐 Problemas de conectividade</li>
         </ul>
       </div>
 
       <div class="suggestions">
-        <h3>O que você pode fazer:</h3>
+        <h3>⚙️ O que você pode fazer:</h3>
         <ul>
-          <li>Verifique os dados do cartão e tente novamente</li>
-          <li>Tente com outro cartão de crédito</li>
-          <li>Entre em contato com seu banco</li>
-          <li>Escolha outro meio de pagamento</li>
+          <li>🔍 Verifique os dados do cartão e tente novamente</li>
+          <li>💳 Tente com outro cartão de crédito</li>
+          <li>🏦 Entre em contato com seu banco</li>
+          <li>🔄 Escolha outro meio de pagamento</li>
         </ul>
       </div>
 
-      <div class="actions">
-        <router-link to="/@/payment" class="btn primary">Tentar Novamente</router-link>
-        <router-link to="/@/" class="btn secondary">Voltar ao Início</router-link>
+      <div class="failure-actions">
+        <button @click="tryAgain" class="retry-btn">Tentar Novamente</button>
+        <router-link to="/@/" class="home-link">Voltar ao Início</router-link>
       </div>
     </div>
   </div>
@@ -62,64 +43,29 @@
 <script>
 export default {
   name: 'PaymentFailure',
-  data() {
-    return {
-      paymentInfo: null
-    }
-  },
-  mounted() {
-    this.extractPaymentInfo();
-  },
   methods: {
-    extractPaymentInfo() {
-      const urlParams = new URLSearchParams(window.location.search);
-      this.paymentInfo = {
-        collection_id: urlParams.get('collection_id'),
-        collection_status: urlParams.get('collection_status'),
-        payment_id: urlParams.get('payment_id'),
-        status: urlParams.get('status'),
-        external_reference: urlParams.get('external_reference'),
-        payment_type: urlParams.get('payment_type'),
-        merchant_order_id: urlParams.get('merchant_order_id'),
-        preference_id: urlParams.get('preference_id'),
-        site_id: urlParams.get('site_id'),
-        processing_mode: urlParams.get('processing_mode')
-      };
-    },
-    formatPaymentType(type) {
-      const types = {
-        'credit_card': 'Cartão de Crédito',
-        'debit_card': 'Cartão de Débito',
-        'account_money': 'Dinheiro da Conta MP',
-        'bank_transfer': 'Transferência Bancária',
-        'ticket': 'Boleto',
-        'atm': 'Caixa Eletrônico',
-        'digital_currency': 'Moeda Digital',
-        'digital_wallet': 'Carteira Digital'
-      };
-      return types[type] || type;
-    },
-    formatStatus(status) {
-      const statuses = {
-        'approved': 'Aprovado',
-        'pending': 'Pendente',
-        'rejected': 'Rejeitado',
-        'cancelled': 'Cancelado',
-        'refunded': 'Reembolsado'
-      };
-      return statuses[status] || status;
+    tryAgain() {
+      // Limpar qualquer sessionStorage relacionado ao pagamento falhado
+      const sessionId = new URLSearchParams(window.location.search).get('session_id');
+      if (sessionId) {
+        sessionStorage.removeItem('paymentSessionId');
+      }
+
+      // Voltar para a página inicial para criar novo pagamento
+      this.$router.push('/@/');
     }
   }
-}
+};
 </script>
 
 <style scoped>
-.payment-result {
+.payment-failure {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
   padding: 20px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .result-card {
@@ -131,131 +77,155 @@ export default {
   width: 100%;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   border: 1px solid #333;
+  border-top: 5px solid #f44336;
 }
 
 .icon {
   margin-bottom: 20px;
 }
 
-.result-card h1 {
+.result-card h2 {
   color: #f44336;
-  margin-bottom: 10px;
-  font-size: 2em;
+  margin-bottom: 15px;
+  font-size: 1.8em;
 }
 
-.status-message {
-  color: #e0e0e0;
+.result-card > p {
+  color: #b0b0b0;
   margin-bottom: 30px;
   font-size: 1.1em;
 }
 
-.payment-details {
+.error-reasons,
+.suggestions {
   background: #1f1f1f;
   border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 30px;
+  padding: 25px;
+  margin-bottom: 25px;
   text-align: left;
+  border: 1px solid #444;
 }
 
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #333;
-}
-
-.detail-item:last-child {
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.label {
-  color: #a0a0a0;
-  font-weight: 500;
-}
-
-.value {
-  color: #e0e0e0;
-  font-weight: bold;
-}
-
-.failure-status {
+.error-reasons h3,
+.suggestions h3 {
   color: #f44336;
-}
-
-.error-reasons, .suggestions {
-  background: #1f1f1f;
-  border-radius: 10px;
-  padding: 20px;
   margin-bottom: 20px;
-  text-align: left;
+  text-align: center;
+  font-size: 1.3em;
 }
 
-.error-reasons h3, .suggestions h3 {
+.suggestions h3 {
+  color: #ff9800;
+}
+
+.error-reasons ul,
+.suggestions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-reasons li,
+.suggestions li {
   color: #e0e0e0;
   margin-bottom: 15px;
-  text-align: center;
+  padding: 15px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  font-size: 1.1em;
+  transition: all 0.3s ease;
 }
 
-.error-reasons ul, .suggestions ul {
-  color: #a0a0a0;
-  padding-left: 20px;
+.error-reasons li {
+  border-left: 4px solid #f44336;
 }
 
-.error-reasons li, .suggestions li {
-  margin-bottom: 8px;
-  line-height: 1.5;
+.suggestions li {
+  border-left: 4px solid #ff9800;
 }
 
-.actions {
+.error-reasons li:hover,
+.suggestions li:hover {
+  background: #333;
+  transform: translateX(5px);
+}
+
+.error-reasons li:last-child,
+.suggestions li:last-child {
+  margin-bottom: 0;
+}
+
+.failure-actions {
   display: flex;
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 30px;
 }
 
-.btn {
+.retry-btn,
+.home-link {
   padding: 12px 24px;
   border-radius: 8px;
-  text-decoration: none;
   font-weight: bold;
   transition: all 0.3s ease;
   font-size: 1em;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
 }
 
-.btn.primary {
-  background: linear-gradient(45deg, #C14A09, #a03f08);
+.retry-btn {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
   color: white;
 }
 
-.btn.primary:hover {
+.retry-btn:hover {
+  background: linear-gradient(45deg, #d32f2f, #c62828);
+  transform: translateY(-2px);
+}
+
+.home-link {
+  background: linear-gradient(45deg, #C14A09, #a03f08);
+  color: white;
+  display: inline-block;
+}
+
+.home-link:hover {
   background: linear-gradient(45deg, #a03f08, #8b3507);
   transform: translateY(-2px);
 }
 
-.btn.secondary {
-  background: transparent;
-  color: #e0e0e0;
-  border: 2px solid #333;
-}
-
-.btn.secondary:hover {
-  background: #333;
-  transform: translateY(-2px);
-}
-
 @media (max-width: 600px) {
+  .payment-failure {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
   .result-card {
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  .failure-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .retry-btn,
+  .home-link {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .error-reasons,
+  .suggestions {
     padding: 20px;
   }
 
-  .actions {
-    flex-direction: column;
-  }
-
-  .btn {
-    width: 100%;
+  .error-reasons li,
+  .suggestions li {
+    padding: 12px;
   }
 }
 </style>

@@ -9,15 +9,37 @@
     <div v-if="!showPaymentStatus" class="payment-form">
       <form @submit.prevent="handlePayment" class="form">
         <div class="form-group">
-          <label for="idUrl">🔗 ID da URL:</label>
+          <label for="originalUrl">🔗 URL para encurtar:</label>
           <input
-            id="idUrl"
-            v-model="paymentData.idUrl"
-            type="text"
-            placeholder="Ex: minha-url-123"
+            id="originalUrl"
+            v-model="paymentData.originalUrl"
+            type="url"
+            placeholder="https://exemplo.com/minha-url-longa"
             required
             :disabled="isLoading"
           />
+        </div>
+
+        <div class="form-group">
+          <label for="customAlias">🔖 Alias personalizado (opcional):</label>
+          <input
+            id="customAlias"
+            v-model="paymentData.customAlias"
+            type="text"
+            placeholder="Ex: meulink"
+            :disabled="isLoading"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="expiryDate">📅 Data de expiração:</label>
+          <input
+            id="expiryDate"
+            v-model="paymentData.expiryDate"
+            type="date"
+            :disabled="isLoading"
+          />
+          <small>Se não especificado, URL premium expira em 7 dias</small>
         </div>
 
         <div class="form-group">
@@ -31,21 +53,6 @@
             required
             :disabled="isLoading"
           />
-        </div>
-
-        <div class="form-group">
-          <label for="expirationDays">⏰ Expiração (dias):</label>
-          <input
-            id="expirationDays"
-            v-model.number="paymentData.expirationDays"
-            type="number"
-            min="1"
-            max="30"
-            placeholder="7"
-            required
-            :disabled="isLoading"
-          />
-          <small>Link expira em {{ paymentData.expirationDays }} {{ paymentData.expirationDays === 1 ? 'dia' : 'dias' }}</small>
         </div>
 
         <div class="form-group">
@@ -179,7 +186,6 @@ export default {
       isLoading,
       error,
       isSDKLoaded,
-      processPayment,
       verifyPayment,
       clearError,
       handlePaymentReturn,
@@ -188,9 +194,10 @@ export default {
 
     // Component state
     const paymentData = ref({
-      idUrl: '',
-      quantity: 1,
-      expirationDays: 7
+      originalUrl: '',
+      customAlias: '',
+      expiryDate: '',
+      quantity: 1
     });
 
     const showPaymentStatus = ref(false);
@@ -200,25 +207,70 @@ export default {
 
     // Computed properties
     const isFormValid = computed(() => {
-      return paymentData.value.idUrl.trim() &&
-             paymentData.value.quantity > 0 &&
-             paymentData.value.expirationDays > 0;
+      return paymentData.value.originalUrl.trim() &&
+             paymentData.value.quantity > 0;
     });
 
     // Methods
     const handlePayment = async () => {
-      try {
-        await processPayment(
-          paymentData.value.idUrl,
-          paymentData.value.quantity,
-          paymentData.value.expirationDays
-        );
-
-        // The checkout will open in a new window/tab
-        // User will return to the app after payment completion
-      } catch (err) {
-        console.error('Erro ao criar pagamento', err);
+      if (!paymentData.value.originalUrl.trim()) {
+        alert('Por favor, insira uma URL para encurtar');
+        return;
       }
+
+      try {
+        const urlData = {
+          originalUrl: paymentData.value.originalUrl,
+          customAlias: paymentData.value.customAlias || null,
+          expiryDate: paymentData.value.expiryDate || null,
+          quantity: paymentData.value.quantity || 1
+        };
+
+        // Criar pagamento com dados da URL
+        const { preferenceId, sessionId } = await createPayment(urlData);
+
+        // Armazenar sessionId para consultar status depois
+        sessionStorage.setItem('paymentSessionId', sessionId);
+
+        // Inicializar checkout do MercadoPago
+        initMercadoPago(preferenceId);
+
+      } catch (err) {
+        console.error('Falha na criação do pagamento:', err);
+        alert('Falha ao criar pagamento. Tente novamente.');
+      }
+    };
+
+    const createPayment = async (urlData) => {
+      const response = await fetch('/.netlify/functions/prefer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalUrl: urlData.originalUrl,
+          customAlias: urlData.customAlias,
+          expiryDate: urlData.expiryDate,
+          quantity: urlData.quantity || 1
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Falha ao criar pagamento');
+      }
+
+      const { id: preferenceId, sessionId } = await response.json();
+      return { preferenceId, sessionId };
+    };
+
+    const initMercadoPago = (preferenceId) => {
+      const mp = new window.MercadoPago(process.env.VUE_APP_MP_PUBLIC_KEY, {
+        locale: 'pt-BR'
+      });
+
+      mp.checkout({
+        preference: { id: preferenceId },
+        autoOpen: true
+      });
     };
 
     const handlePaymentVerification = async () => {
@@ -247,9 +299,10 @@ export default {
       paymentResult.value = null;
       clearError();
       paymentData.value = {
-        idUrl: '',
-        quantity: 1,
-        expirationDays: 7
+        originalUrl: '',
+        customAlias: '',
+        expiryDate: '',
+        quantity: 1
       };
       verificationPaymentId.value = '';
     };
@@ -303,7 +356,9 @@ export default {
       handlePaymentVerification,
       refreshPaymentStatus,
       resetForm,
-      formatDate
+      formatDate,
+      createPayment,
+      initMercadoPago
     };
   }
 };

@@ -291,7 +291,8 @@ export default {
         const preferenceId = await mercadoPagoService.createPaymentPreference(
           urlData.originalUrl,
           urlData.quantity || 1,
-          7 // 7 dias de expiração para premium
+          7, // 7 dias de expiração para premium
+          urlData.customAlias
         );
 
         // Para agora, usar o preferenceId como sessionId também

@@ -15,16 +15,17 @@ class MercadoPagoService {
 
   /**
    * Creates a payment preference in the backend
-   * @param {string} idUrl - URL identifier
+   * @param {string} originalUrl - Original URL to shorten
    * @param {number} quantity - Quantity (positive integer)
    * @param {number} expirationDays - Expiration days for the payment link (default: 7)
+   * @param {string} customAlias - Custom alias for the URL (optional)
    * @returns {Promise<string>} MercadoPago preference ID
    */
-  async createPaymentPreference(idUrl, quantity, expirationDays = 7) {
+  async createPaymentPreference(originalUrl, quantity, expirationDays = 7, customAlias = '') {
     try {
       // Validate input
-      if (!idUrl || !quantity) {
-        throw new Error('Missing required fields: idUrl and quantity are required');
+      if (!originalUrl || !quantity) {
+        throw new Error('Missing required fields: originalUrl and quantity are required');
       }
 
       if (!Number.isInteger(quantity) || quantity <= 0) {
@@ -46,9 +47,10 @@ class MercadoPagoService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          idUrl,
-          quantity,
-          expires_at: expiresAt
+          originalUrl,
+          customAlias,
+          expiryDate: expiresAt,
+          quantity
         })
       });
 

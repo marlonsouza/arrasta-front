@@ -211,6 +211,13 @@ export default {
           await this.processPremiumUrl();
         } else {
           await this.createFreeUrl();
+          // Scroll para o resultado em desktop
+          this.$nextTick(() => {
+            const resultSection = document.querySelector('.result-section');
+            if (resultSection) {
+              resultSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          });
         }
       } catch (error) {
         // Error handling removed for production
@@ -239,7 +246,7 @@ export default {
 
       const data = await response.json();
       this.shortenedUrl = data.shortUrl;
-      this.qrCode = data.qrCodeDataURL;
+      this.qrCode = data.qrCode;
     },
 
     async processPremiumUrl() {

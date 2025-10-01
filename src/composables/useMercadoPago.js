@@ -102,21 +102,16 @@ export function useMercadoPago() {
   };
 
   /**
-   * Complete payment flow: create preference and redirect to MercadoPago
-   * @param {string} idUrl - URL identifier
-   * @param {number} quantity - Quantity
-   * @param {number} expirationDays - Expiration days for payment link
+   * Complete payment flow: open checkout with existing preference ID
+   * @param {string} preferenceId - MercadoPago preference ID
    * @param {Object} options - Additional options
    */
-  const processPayment = async (idUrl, quantity, expirationDays = 7, options = {}) => {
+  const processPayment = async (preferenceId, options = {}) => {
     try {
       isLoading.value = true;
       error.value = null;
 
-      // Step 1: Create payment preference via backend
-      const preferenceId = await mercadoPagoService.createPaymentPreference(idUrl, quantity, expirationDays);
-
-      // Step 2: Try SDK approach first, fallback to direct redirect
+      // Try SDK approach first, fallback to direct redirect
       try {
         const checkout = await openCheckout(preferenceId, options);
         return { preferenceId, checkout, method: 'sdk' };
@@ -140,22 +135,15 @@ export function useMercadoPago() {
 
   /**
    * Alternative payment flow using direct redirect (no SDK)
-   * @param {string} idUrl - URL identifier
-   * @param {number} quantity - Quantity
-   * @param {number} expirationDays - Expiration days for payment link
+   * @param {string} preferenceId - MercadoPago preference ID
    */
-  const processPaymentWithRedirect = async (idUrl, quantity, expirationDays = 7) => {
+  const processPaymentWithRedirect = async (preferenceId) => {
     try {
       isLoading.value = true;
       error.value = null;
 
-
-      // Create payment preference via backend
-      const preferenceId = await mercadoPagoService.createPaymentPreference(idUrl, quantity, expirationDays);
-
       // Build MercadoPago checkout URL
       const checkoutUrl = `${mercadoPagoBaseUrl}/checkout/v1/redirect?pref_id=${preferenceId}`;
-
 
       // Direct redirect - no SDK needed
       window.location.href = checkoutUrl;

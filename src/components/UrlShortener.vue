@@ -265,13 +265,13 @@ export default {
         // Armazenar sessionId para consultar status depois
         sessionStorage.setItem('paymentSessionId', sessionId);
 
-        // Processa o pagamento usando o composable do MercadoPago
+        // Processa o pagamento usando o composable do MercadoPago com o preferenceId já criado
         try {
           // Tenta primeiro o método normal (com SDK)
-          await this.processPayment(preferenceId, 1);
+          await this.processPayment(preferenceId);
         } catch (sdkError) {
           // Fallback: usar redirecionamento direto
-          await this.processPaymentWithRedirect(preferenceId, 1);
+          await this.processPaymentWithRedirect(preferenceId);
         }
 
       } catch (error) {

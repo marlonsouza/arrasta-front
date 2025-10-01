@@ -16,7 +16,7 @@
             type="url"
             placeholder="https://exemplo.com/minha-url-longa"
             required
-            :disabled="isLoading"
+            :disabled="isLoading || isProcessing"
           />
         </div>
 
@@ -27,7 +27,7 @@
             v-model="paymentData.customAlias"
             type="text"
             placeholder="Ex: meulink"
-            :disabled="isLoading"
+            :disabled="isLoading || isProcessing"
           />
         </div>
 
@@ -37,7 +37,7 @@
             id="expiryDate"
             v-model="paymentData.expiryDate"
             type="date"
-            :disabled="isLoading"
+            :disabled="isLoading || isProcessing"
           />
           <small>Se não especificado, URL premium expira em 7 dias</small>
         </div>
@@ -51,7 +51,7 @@
             min="1"
             placeholder="1"
             required
-            :disabled="isLoading"
+            :disabled="isLoading || isProcessing"
           />
         </div>
 
@@ -67,9 +67,9 @@
         <button
           type="submit"
           class="payment-button"
-          :disabled="isLoading || !isFormValid"
+          :disabled="isLoading || !isFormValid || isProcessing"
         >
-          <span v-if="isLoading">⏳ Processando...</span>
+          <span v-if="isLoading || isProcessing">⏳ Processando...</span>
           <span v-else>🚀 Pagar com MercadoPago</span>
         </button>
       </form>
@@ -204,6 +204,7 @@ export default {
     const paymentResult = ref(null);
     const verificationPaymentId = ref('');
     const urlParams = ref({});
+    const isProcessing = ref(false); // Flag para prevenir chamadas duplicadas
 
     // Computed properties
     const isFormValid = computed(() => {
@@ -213,12 +214,36 @@ export default {
 
     // Methods
     const handlePayment = async () => {
+      // Previne chamadas duplicadas
+      if (isProcessing.value) {
+        console.log('Pagamento já está sendo processado...');
+        return;
+      }
+
       if (!paymentData.value.originalUrl.trim()) {
         alert('Por favor, insira uma URL para encurtar');
         return;
       }
 
+      // Marca como processando
+      isProcessing.value = true;
+
       try {
+        // Verificar cache no LocalStorage para evitar duplicatas
+        const cacheKey = `payment_${paymentData.value.customAlias || 'temp'}`;
+        const cached = localStorage.getItem(cacheKey);
+
+        if (cached && paymentData.value.customAlias) {
+          const { timestamp, preferenceId } = JSON.parse(cached);
+
+          // Se foi criado há menos de 5 minutos, redireciona para o mesmo pagamento
+          if (Date.now() - timestamp < 5 * 60 * 1000) {
+            console.log('Redirecionando para pagamento existente...');
+            initMercadoPago(preferenceId);
+            return;
+          }
+        }
+
         const urlData = {
           originalUrl: paymentData.value.originalUrl,
           customAlias: paymentData.value.customAlias || null,
@@ -229,6 +254,14 @@ export default {
         // Criar pagamento com dados da URL
         const { preferenceId, sessionId } = await createPayment(urlData);
 
+        // Salvar no cache se houver customAlias
+        if (paymentData.value.customAlias) {
+          localStorage.setItem(cacheKey, JSON.stringify({
+            timestamp: Date.now(),
+            preferenceId
+          }));
+        }
+
         // Armazenar sessionId para consultar status depois
         sessionStorage.setItem('paymentSessionId', sessionId);
 
@@ -237,7 +270,30 @@ export default {
 
       } catch (err) {
         console.error('Falha na criação do pagamento:', err);
-        alert('Falha ao criar pagamento. Tente novamente.');
+
+        // Mensagens de erro amigáveis
+        const errorMessages = {
+          'Custom alias already exists or is being processed':
+            'Este alias já está em uso. Escolha outro nome.',
+          'Too many payment requests':
+            'Muitas tentativas. Aguarde alguns minutos.',
+          'Missing required fields':
+            'Preencha todos os campos obrigatórios.',
+          'Quantity must be a positive integer':
+            'Quantidade inválida.'
+        };
+
+        const errorMessage = errorMessages[err.message] || 'Falha ao criar pagamento. Tente novamente.';
+        alert(errorMessage);
+
+        // Reabilita botão em caso de erro
+        isProcessing.value = false;
+      } finally {
+        // Aguarda 3 segundos antes de permitir nova tentativa
+        // (apenas se não houve redirecionamento)
+        setTimeout(() => {
+          isProcessing.value = false;
+        }, 3000);
       }
     };
 
@@ -305,6 +361,7 @@ export default {
         quantity: 1
       };
       verificationPaymentId.value = '';
+      isProcessing.value = false; // Reset isProcessing flag
     };
 
     const formatDate = (dateString) => {
@@ -340,6 +397,7 @@ export default {
       paymentResult,
       verificationPaymentId,
       urlParams,
+      isProcessing,
 
       // Computed
       isFormValid,
@@ -471,6 +529,25 @@ export default {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  position: relative;
+}
+
+.payment-button:disabled::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  right: 12px;
+  margin-top: -8px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
 }
 
 .error-message {

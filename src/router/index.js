@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import UrlShortener from '../components/UrlShortener.vue'
 import UrlLookup from '../components/UrlLookup.vue'
 import ShortUrlRedirect from '../components/ShortUrlRedirect.vue'
-import MercadoPagoCheckout from '../components/MercadoPagoCheckout.vue'
 import PaymentSuccess from '../components/PaymentSuccess.vue'
 import PaymentPending from '../components/PaymentPending.vue'
 import PaymentFailure from '../components/PaymentFailure.vue'
@@ -21,11 +20,6 @@ const routes = [
     path: '/@/lookup',
     name: 'Lookup',
     component: UrlLookup
-  },
-  {
-    path: '/@/payment',
-    name: 'Payment',
-    component: MercadoPagoCheckout
   },
   {
     path: '/@/success',
